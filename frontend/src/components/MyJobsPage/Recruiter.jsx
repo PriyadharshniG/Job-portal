@@ -2,94 +2,60 @@ import axios from "axios";
 import React from "react";
 import styled from "styled-components";
 import LoadingComTwo from "../shared/LoadingComTwo";
-
-import { useQuery, useMutation, QueryClient } from "@tanstack/react-query";
-import { updateHandler } from "../../utils/FetchHandlers";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
-const queryClient = new QueryClient();
+
+const API = "http://localhost:8000/api/v1";
+
+const STATUS_COLOR = {
+    pending:   { bg: "#fef3c7", color: "#92400e" },
+    interview: { bg: "#dbeafe", color: "#1e3a8a" },
+    accepted:  { bg: "#d1fae5", color: "#065f46" },
+    declined:  { bg: "#fee2e2", color: "#991b1b" },
+};
 
 const Recruiter = () => {
-    const {
-        isPending,
-        isError,
-        data: jobs,
-        error,
-        refetch,
-    } = useQuery({
-        queryKey: ["rec-jobs"],
+    const qc = useQueryClient();
+
+    const { isPending, isError, data: applications, error } = useQuery({
+        queryKey: ["rec-applications"],
         queryFn: async () => {
             const response = await axios.get(
-                `http://localhost:8000/api/v1/applications/recruiter-jobs`,
-                {
-                    withCredentials: true,
-                }
+                `${API}/applications/recruiter-jobs`,
+                { withCredentials: true }
             );
             return response?.data?.result;
         },
     });
 
-    const updateJobStatusMutation = useMutation({
-        mutationFn: updateHandler,
-        onSuccess: (data, variable, context) => {
-            refetch();
-            Swal.fire({
-                icon: "success",
-                title: "Status Updated",
-                text: data?.message,
-            });
+    const statusMutation = useMutation({
+        mutationFn: ({ application_id, status }) =>
+            axios.put(`${API}/applications/status`, { application_id, status }, { withCredentials: true }),
+        onSuccess: (_, vars) => {
+            qc.invalidateQueries(["rec-applications"]);
+            const label = vars.status === "accepted" ? "✅ Admitted" : vars.status === "declined" ? "❌ Declined" : "✔ Updated";
+            Swal.fire({ icon: "success", title: label, timer: 1500, showConfirmButton: false });
         },
-        onError: (error, variables, context) => {
-            console.log(error);
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: error?.response?.data,
-            });
-        },
+        onError: (err) =>
+            Swal.fire({ icon: "error", title: "Error", text: err?.response?.data?.detail || "Failed." }),
     });
 
-    const handleAcceptStatus = (id, recruiterId) => {
-        const newStatus = { recruiterId, status: "accepted" };
-        updateJobStatusMutation.mutate({
-            body: newStatus,
-            url: `http://localhost:8000/api/v1/applications/${id}`,
-        });
-    };
-
-    const handleRejectStatus = (id, recruiterId) => {
-        const newStatus = { recruiterId, status: "rejected" };
-        updateJobStatusMutation.mutate({
-            body: newStatus,
-            url: `https://full-stack-job-portal-server.vercel.app/api/v1/application/${id}`,
-        });
-    };
-
-    const handleResumeView = (drive) => {
-        const newWindow = window.open(drive, "_blank");
-        if (newWindow) {
-            newWindow.focus();
-        } else {
-            alert("Please allow pop-ups for this site to open the PDF.");
-        }
-    };
-    if (isPending) {
-        return <LoadingComTwo />;
-    }
+    if (isPending) return <LoadingComTwo />;
 
     if (isError) {
         return (
-            <h2 className="mt-8 text-2xl font-semibold text-center text-red-600">
-                -- {error?.response?.data} --
-            </h2>
+            <div style={{ textAlign: "center", marginTop: "3rem", color: "#ef4444", fontSize: "16px" }}>
+                ⚠ {error?.response?.data?.detail || error?.message || "Failed to load applications."}
+            </div>
         );
     }
 
-    if (jobs) {
-        // console.log(jobs);
-    }
-
-    if (!jobs?.length === 0) {
-        return <h2 className="">No Application found</h2>;
+    if (!applications || applications.length === 0) {
+        return (
+            <div style={{ textAlign: "center", marginTop: "3rem", color: "#6b7280", fontSize: "16px" }}>
+                📭 No applications received for your jobs yet.
+            </div>
+        );
     }
 
     return (
@@ -99,86 +65,78 @@ const Recruiter = () => {
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Applicant</th>
+                            <th>Foundation ID</th>
                             <th>Job Position</th>
                             <th>Company</th>
+                            <th>Applied On</th>
+                            <th>Resume</th>
                             <th>Status</th>
-                            <th>actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {jobs?.map((job, index) => {
-                            let i =
-                                index + 1 < 10 ? `0${index + 1}` : index + 1;
+                        {applications.map((app, index) => {
+                            const i = index + 1 < 10 ? `0${index + 1}` : index + 1;
+                            const appliedDate = app?.applied_at
+                                ? new Date(app.applied_at).toLocaleDateString("en-IN", {
+                                      day: "2-digit", month: "short", year: "numeric",
+                                  })
+                                : "—";
+                            const sc = STATUS_COLOR[app?.status] || { bg: "#f3f4f6", color: "#374151" };
+
                             return (
-                                <tr key={job?._id}>
+                                <tr key={app._id}>
                                     <td>{i}</td>
-                                    <td>{job?.jobId?.position}</td>
-                                    <td>{job?.jobId?.company}</td>
-                                    <td>{job?.status}</td>
+                                    <td className="applicant-name">{app?.username || "—"}</td>
+                                    <td><span className="fid-tag">{app?.foundation_id || "—"}</span></td>
+                                    <td className="position">{app?.position || "—"}</td>
+                                    <td>{app?.company || "—"}</td>
+                                    <td className="date">{appliedDate}</td>
+                                    <td>
+                                        {app?.resume_url ? (
+                                            <a
+                                                href={app.resume_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="resume-link"
+                                            >
+                                                📄 View
+                                            </a>
+                                        ) : <span className="no-resume">None</span>}
+                                    </td>
+                                    <td>
+                                        <span className="status-badge" style={{ background: sc.bg, color: sc.color }}>
+                                            {app?.status || "pending"}
+                                        </span>
+                                    </td>
                                     <td className="action-row">
-                                        <button
-                                            className="action resume"
-                                            onClick={() =>
-                                                handleResumeView(job.resume)
-                                            }
-                                        >
-                                            resume
-                                        </button>
-
-                                        {job?.status === "pending" && (
-                                            <>
-                                                {" "}
-                                                <button
-                                                    className="action accept"
-                                                    onClick={() =>
-                                                        handleAcceptStatus(
-                                                            job._id,
-                                                            job?.recruiterId
-                                                        )
-                                                    }
-                                                >
-                                                    accept
-                                                </button>
-                                                <button
-                                                    className="action reject"
-                                                    onClick={() =>
-                                                        handleRejectStatus(
-                                                            job._id,
-                                                            job?.recruiterId
-                                                        )
-                                                    }
-                                                >
-                                                    Reject
-                                                </button>
-                                            </>
-                                        )}
-
-                                        {job?.status === "accepted" && (
+                                        {app?.status !== "accepted" && (
                                             <button
-                                                className="action reject"
+                                                className="act-btn admit"
+                                                disabled={statusMutation.isPending}
                                                 onClick={() =>
-                                                    handleRejectStatus(
-                                                        job._id,
-                                                        job?.recruiterId
-                                                    )
+                                                    statusMutation.mutate({ application_id: app._id, status: "accepted" })
                                                 }
-                                            >
-                                                Reject
-                                            </button>
+                                            >✅ Admit</button>
                                         )}
-
-                                        {job?.status === "rejected" && (
+                                        {app?.status !== "interview" && app?.status !== "accepted" && (
                                             <button
-                                                className="action accept"
+                                                className="act-btn interview"
+                                                disabled={statusMutation.isPending}
                                                 onClick={() =>
-                                                    handleAcceptStatus(
-                                                        job._id,
-                                                        job?.recruiterId
-                                                    )
+                                                    statusMutation.mutate({ application_id: app._id, status: "interview" })
                                                 }
-                                            >
-                                                accept
-                                            </button>
+                                            >🎙️ Interview</button>
+                                        )}
+                                        {app?.status !== "declined" && (
+                                            <button
+                                                className="act-btn decline"
+                                                disabled={statusMutation.isPending}
+                                                onClick={() =>
+                                                    statusMutation.mutate({ application_id: app._id, status: "declined" })
+                                                }
+                                            >❌ Decline</button>
                                         )}
                                     </td>
                                 </tr>
@@ -192,89 +150,81 @@ const Recruiter = () => {
 };
 
 const Wrapper = styled.section`
-    .title-row {
-        display: flex;
-        justify-content: flex-start;
-        align-items: center;
-        font-size: calc(0.9rem + 0.4vw);
-        text-transform: capitalize;
-        letter-spacing: 1px;
-        font-weight: 600;
-        opacity: 0.85;
-        color: var(--color-black);
-        position: relative;
-    }
-    .title-row:before {
-        content: "";
-        position: absolute;
-        bottom: -4px;
-        left: 0;
-        width: calc(30px + 0.7vw);
-        height: calc(2px + 0.1vw);
-        background-color: var(--color-primary);
-    }
     .content-row {
         overflow-x: auto;
-        margin-top: calc(2rem + 0.5vw);
+        margin-top: calc(1.5rem + 0.5vw);
     }
     .table {
         border-collapse: collapse;
         border-spacing: 0;
         width: 100%;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 13px;
     }
     .table thead {
-        background-color: var(--color-accent);
-        color: var(--color-white);
-        font-size: 14px;
-        letter-spacing: 1px;
-        font-weight: 400;
-        text-transform: capitalize;
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: white;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        text-transform: uppercase;
     }
-
     .table th,
     .table td {
         text-align: left;
-        padding: 12px;
+        padding: 11px 13px;
     }
-
     .table tbody tr {
-        font-size: 15px;
-        font-weight: 400;
-        text-transform: capitalize;
-        letter-spacing: 1px;
-        transition: all 0.2s linear;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.12s;
+    }
+    .table tbody tr:hover { background: #f8faff; }
+    .table tbody tr:last-child { border-bottom: none; }
+
+    .applicant-name { font-weight: 700; color: #111; }
+    .fid-tag {
+        background: #fef3c7; color: #92400e;
+        border-radius: 999px; padding: 2px 10px;
+        font-size: 11px; font-weight: 700;
+    }
+    .position { font-weight: 600; color: #374151; text-transform: capitalize; }
+    .date { font-size: 12px; color: #9ca3af; }
+
+    .status-badge {
+        display: inline-block;
+        padding: 3px 10px; border-radius: 999px;
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.4px;
     }
 
-    .table tbody tr:nth-child(even) {
-        background-color: #00000011;
+    .resume-link {
+        color: #d97706; font-weight: 600; font-size: 12px;
+        text-decoration: none;
     }
+    .resume-link:hover { text-decoration: underline; }
+    .no-resume { color: #9ca3af; font-size: 12px; }
 
-    .table .action-row {
+    .action-row {
         display: flex;
-        flex-direction: row;
-        justify-content: flex-start;
-        align-items: center;
-        column-gap: 12px;
+        gap: 5px;
+        flex-wrap: wrap;
     }
-    .table .action-row .action {
-        font-size: 12px;
-        text-transform: capitalize;
-        font-weight: 500;
-        color: #fff;
-        padding: 1px 6px;
-        border-radius: 4px;
+    .act-btn {
+        padding: 4px 10px; border-radius: 6px;
+        font-size: 11px; font-weight: 700;
+        border: none; cursor: pointer;
+        transition: 0.15s; white-space: nowrap;
     }
-    .action.accept {
-        background-color: #168e24;
-    }
-    .action.reject {
-        background-color: #f1322f;
-    }
-    .action.resume {
-        background-color: #ef9712;
-    }
+    .act-btn:hover { transform: translateY(-1px); }
+    .act-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .act-btn.admit    { background: #d1fae5; color: #065f46; }
+    .act-btn.admit:hover { background: #10b981; color: white; }
+    .act-btn.interview { background: #dbeafe; color: #1e40af; }
+    .act-btn.interview:hover { background: #3b82f6; color: white; }
+    .act-btn.decline  { background: #fee2e2; color: #991b1b; }
+    .act-btn.decline:hover { background: #ef4444; color: white; }
 `;
 
 export default Recruiter;

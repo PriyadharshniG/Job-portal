@@ -49,6 +49,16 @@ def all_users(request: Request):
     users = list(db.vgulg_users.find({}, {"password": 0}).sort("created_at", -1))
     return {"status": True, "result": users}
 
+# ── Delete a User ────────────────────────────────────────
+@router.delete("/users/{user_id}")
+def delete_user(user_id: str, request: Request):
+    require_admin(request)
+    db = get_db()
+    result = db.vgulg_users.delete_one({"_id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"status": True, "message": "User deleted successfully."}
+
 # ── Pending Approval Users ───────────────────────────────
 @router.get("/pending")
 def pending_users(request: Request):

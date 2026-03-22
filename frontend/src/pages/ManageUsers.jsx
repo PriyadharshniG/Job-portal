@@ -3,80 +3,94 @@ import { useUserContext } from "../context/UserContext";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
 import { CiSquarePlus } from "react-icons/ci";
 import styled from "styled-components";
+import { MdDelete } from "react-icons/md";
 
 import Swal from "sweetalert2";
-import { getAllHandler } from "../utils/FetchHandlers";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+
+const API = "http://localhost:8000/api/v1";
+const fetcher = (url) => axios.get(url, { withCredentials: true }).then(r => r.data);
 
 const ManageUsers = () => {
     const { user: me } = useUserContext();
-    const {
-        isPending,
-        isError,
-        data: users,
-        error,
-        refetch,
-    } = useQuery({
-        queryKey: ["users"],
-        queryFn: () =>
-            getAllHandler(`http://localhost:8000/api/v1/admin/users`),
+    const qc = useQueryClient();
+
+    const { isPending, isError, data: users, error } = useQuery({
+        queryKey: ["manage-users"],
+        queryFn: () => fetcher(`${API}/admin/users`),
     });
 
-    const updateUserModal = (id, role) => {
+    // Change Role Mutation
+    const roleMutation = useMutation({
+        mutationFn: ({ user_id, role }) =>
+            axios.put(`${API}/admin/role`, { user_id, role }, { withCredentials: true }),
+        onSuccess: () => {
+            qc.invalidateQueries(["manage-users"]);
+            Swal.fire({ title: "Done!", text: "Role updated successfully.", icon: "success", timer: 1500, showConfirmButton: false });
+        },
+        onError: (e) =>
+            Swal.fire({ title: "Error", text: e?.response?.data?.detail || "Failed.", icon: "error" }),
+    });
+
+    // Delete User Mutation
+    const deleteMutation = useMutation({
+        mutationFn: (user_id) =>
+            axios.delete(`${API}/admin/users/${user_id}`, { withCredentials: true }),
+        onSuccess: () => {
+            qc.invalidateQueries(["manage-users"]);
+            Swal.fire({ title: "Deleted!", text: "User has been removed.", icon: "success", timer: 1500, showConfirmButton: false });
+        },
+        onError: (e) =>
+            Swal.fire({ title: "Error", text: e?.response?.data?.detail || "Failed to delete.", icon: "error" }),
+    });
+
+    const confirmRoleChange = (user_id, role) => {
         Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
+            title: "Change Role?",
+            text: `Set this user as "${role}"?`,
             icon: "warning",
             showCancelButton: true,
-            confirmButtonColor: "#19b74b",
-            cancelButtonColor: "#d33",
-            confirmButtonText: "Yes",
-        }).then((result) => {
-            if (result.isConfirmed) {
-                UpdateUserRole(id, role);
-            }
+            confirmButtonColor: "#f59e0b",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Yes, change it!",
+        }).then(result => {
+            if (result.isConfirmed) roleMutation.mutate({ user_id, role });
         });
     };
 
-    const UpdateUserRole = async (id, role) => {
-        const updateUser = { id, role };
-        try {
-            const response = await axios.patch(
-                `http://localhost:8000/api/v1/admin/update-role`,
-                updateUser,
-                { withCredentials: true }
-            );
-            refetch();
-            Swal.fire({
-                title: "Done!",
-                text: "Role Updated Successfully",
-                icon: "success",
-            });
-        } catch (error) {
-            console.log(error);
-            Swal.fire({
-                title: "Sorry!",
-                text: error?.response?.data,
-                icon: "error",
-            });
-        }
+    const confirmDelete = (user_id, username) => {
+        Swal.fire({
+            title: `Delete "${username}"?`,
+            text: "This action cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#ef4444",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Yes, delete!",
+        }).then(result => {
+            if (result.isConfirmed) deleteMutation.mutate(user_id);
+        });
     };
 
-    if (isPending) {
-        return <LoadingComTwo />;
-    }
-    if (users) {
-        // console.log(users);
+    if (isPending) return <LoadingComTwo />;
+
+    if (isError) {
+        return (
+            <h2 style={{ textAlign: "center", color: "#ef4444", marginTop: "2rem" }}>
+                {error?.message || "Failed to load users."}
+            </h2>
+        );
     }
 
     if (!users?.result?.length) {
         return (
-            <h2 className="text-lg md:text-3xl font-bold text-red-600 text-center mt-12">
+            <h2 style={{ textAlign: "center", color: "#6b7280", marginTop: "2rem" }}>
                 -- User List is Empty --
             </h2>
         );
     }
+
     return (
         <Wrapper>
             <div className="title-row">
@@ -89,67 +103,67 @@ const ManageUsers = () => {
                         <tr>
                             <th>#</th>
                             <th>Username</th>
+                            <th>Foundation ID</th>
                             <th>Email</th>
                             <th>Role</th>
-                            <th>actions</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {users?.result?.map((user, index) => {
-                            let i =
-                                index + 1 < 10 ? `0${index + 1}` : index + 1;
+                            let i = index + 1 < 10 ? `0${index + 1}` : index + 1;
+                            const isSelf = user?._id === me._id;
                             return (
                                 <tr key={user._id}>
                                     <td>{i}</td>
-                                    <td>{user?.username}</td>
-                                    <td>{user?.email}</td>
-                                    <td>{user?.role}</td>
+                                    <td className="uname">{user?.username}</td>
+                                    <td><span className="fid-tag">{user?.foundation_id || "—"}</span></td>
+                                    <td className="email">{user?.email}</td>
+                                    <td>
+                                        <span className={`role-badge role-${user?.role}`}>
+                                            {user?.role}
+                                        </span>
+                                    </td>
                                     <td className="action-row">
-                                        {user?._id === me._id ? null : (
+                                        {isSelf ? (
+                                            <span className="self-tag">You</span>
+                                        ) : (
                                             <>
-                                                {" "}
-                                                {user?.role ===
-                                                    "admin" ? null : (
+                                                {user?.role !== "admin" && (
                                                     <button
-                                                        className="action admin"
-                                                        onClick={() =>
-                                                            updateUserModal(
-                                                                user._id,
-                                                                "admin"
-                                                            )
-                                                        }
+                                                        className="action-btn admin"
+                                                        onClick={() => confirmRoleChange(user._id, "admin")}
+                                                        disabled={roleMutation.isPending}
                                                     >
-                                                        admin
+                                                        Admin
                                                     </button>
                                                 )}
-                                                {user?.role ===
-                                                    "recruiter" ? null : (
+                                                {user?.role !== "recruiter" && (
                                                     <button
-                                                        className="action recruiter"
-                                                        onClick={() =>
-                                                            updateUserModal(
-                                                                user._id,
-                                                                "recruiter"
-                                                            )
-                                                        }
+                                                        className="action-btn recruiter"
+                                                        onClick={() => confirmRoleChange(user._id, "recruiter")}
+                                                        disabled={roleMutation.isPending}
                                                     >
-                                                        recuiter
+                                                        Recruiter
                                                     </button>
                                                 )}
-                                                {user?.role ===
-                                                    "user" ? null : (
+                                                {user?.role !== "user" && (
                                                     <button
-                                                        className="action user"
-                                                        onClick={() =>
-                                                            updateUserModal(
-                                                                user._id,
-                                                                "user"
-                                                            )
-                                                        }
+                                                        className="action-btn user"
+                                                        onClick={() => confirmRoleChange(user._id, "user")}
+                                                        disabled={roleMutation.isPending}
                                                     >
-                                                        user
+                                                        User
                                                     </button>
                                                 )}
+                                                <button
+                                                    className="action-btn delete"
+                                                    onClick={() => confirmDelete(user._id, user.username)}
+                                                    disabled={deleteMutation.isPending}
+                                                >
+                                                    <MdDelete style={{ marginRight: "3px", verticalAlign: "middle" }} />
+                                                    Delete
+                                                </button>
                                             </>
                                         )}
                                     </td>
@@ -193,59 +207,80 @@ const Wrapper = styled.section`
         border-collapse: collapse;
         border-spacing: 0;
         width: 100%;
-        border: 1px solid #ddd;
-        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 13px;
     }
     .table thead {
-        background-color: var(--color-accent);
-        color: var(--color-white);
-        font-size: 14px;
-        letter-spacing: 1px;
-        font-weight: 400;
-        text-transform: capitalize;
+        background: linear-gradient(135deg, #1e293b, #334155);
+        color: white;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        text-transform: uppercase;
     }
-
     .table th,
     .table td {
         text-align: left;
-        padding: 12px;
+        padding: 12px 14px;
     }
-
     .table tbody tr {
-        font-size: 15px;
-        font-weight: 400;
-        text-transform: capitalize;
-        letter-spacing: 1px;
-        transition: all 0.2s linear;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.12s;
+    }
+    .table tbody tr:hover { background: #f8faff; }
+    .table tbody tr:last-child { border-bottom: none; }
+
+    .uname { font-weight: 700; color: #111; }
+    .email { font-size: 12px; color: #6b7280; }
+
+    .fid-tag {
+        background: #fef3c7; color: #92400e;
+        border-radius: 999px; padding: 2px 10px;
+        font-size: 11px; font-weight: 700;
     }
 
-    .table tbody tr:nth-child(even) {
-        background-color: #00000011;
+    .role-badge {
+        display: inline-block;
+        font-size: 11px; font-weight: 700;
+        border-radius: 999px; padding: 2px 10px;
+        text-transform: uppercase;
+    }
+    .role-admin     { background: #fce7f3; color: #9d174d; }
+    .role-recruiter { background: #d1fae5; color: #065f46; }
+    .role-user      { background: #dbeafe; color: #1e40af; }
+
+    .self-tag {
+        font-size: 12px; color: #9ca3af; font-style: italic;
     }
 
-    .table .action-row {
+    .action-row {
         display: flex;
         flex-direction: row;
-        justify-content: flex-start;
         align-items: center;
-        column-gap: 12px;
+        gap: 6px;
+        flex-wrap: wrap;
     }
-    .table .action-row .action {
-        font-size: 16px;
-        padding: 1px 8px;
-        border-radius: 4px;
+    .action-btn {
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 6px;
         color: #fff;
         text-transform: capitalize;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: 0.15s;
+        display: inline-flex;
+        align-items: center;
     }
-    .action.recruiter {
-        background-color: #ac04ac;
-    }
-    .action.admin {
-        background-color: #5f14c7;
-    }
-    .action.user {
-        background-color: #c714c7;
-    }
+    .action-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .action-btn.recruiter { background-color: #14b8a6; }
+    .action-btn.admin     { background-color: #8b5cf6; }
+    .action-btn.user      { background-color: #3b82f6; }
+    .action-btn.delete    { background-color: #ef4444; }
 `;
 
 export default ManageUsers;

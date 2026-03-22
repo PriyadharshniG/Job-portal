@@ -2,8 +2,12 @@
 import styled from "styled-components";
 import Logo from "../Logo";
 import { NavLink } from "react-router-dom";
+import { useUserContext } from "../../context/UserContext";
 
 const Navbar = ({ navbarRef }) => {
+    const { user, userLoading } = useUserContext();
+    const isLoggedIn = !userLoading && user && user.email;
+
     return (
         <Wrapper ref={navbarRef}>
             <div className="container">
@@ -16,14 +20,16 @@ const Navbar = ({ navbarRef }) => {
                         Dashboard
                     </NavLink>
                 </nav>
-                <div className="nav-actions">
-                    <NavLink className="btn-login" to="/login">
-                        Log In
-                    </NavLink>
-                    <NavLink className="btn-register" to="/register">
-                        Get Started →
-                    </NavLink>
-                </div>
+                {!isLoggedIn && (
+                    <div className="nav-actions">
+                        <NavLink className="btn-login" to="/login">
+                            Log In
+                        </NavLink>
+                        <NavLink className="btn-register" to="/register">
+                            Get Started →
+                        </NavLink>
+                    </div>
+                )}
             </div>
         </Wrapper>
     );

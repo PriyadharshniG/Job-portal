@@ -59,6 +59,7 @@ const Applicant = () => {
                             <th>Job Position</th>
                             <th>Company</th>
                             <th>Applied On</th>
+                            <th>Resume</th>
                             <th>Status</th>
                             <th>View</th>
                         </tr>
@@ -78,6 +79,15 @@ const Applicant = () => {
                                     <td className="position">{app?.position || "—"}</td>
                                     <td>{app?.company || "—"}</td>
                                     <td className="date">{appliedDate}</td>
+                                    <td>
+                                        {app?.resume_url ? (
+                                            <span className="resume-tag" title={app.resume_url}>
+                                                📄 {app.resume_url.length > 20 ? app.resume_url.slice(0, 20) + "…" : app.resume_url}
+                                            </span>
+                                        ) : (
+                                            <span className="no-resume">—</span>
+                                        )}
+                                    </td>
                                     <td>
                                         <span
                                             className="status-badge"
@@ -166,6 +176,15 @@ const Wrapper = styled.section`
         transition: 0.2s;
     }
     .action.view:hover { color: #059669; transform: scale(1.15); }
+
+    .resume-tag {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: #fffbeb; color: #92400e;
+        border: 1px solid #fde68a; border-radius: 6px;
+        padding: 2px 8px; font-size: 11px; font-weight: 600;
+        max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .no-resume { color: #9ca3af; font-size: 12px; }
 `;
 
 export default Applicant;

@@ -10,6 +10,7 @@ router = APIRouter()
 
 class ApplicationModel(BaseModel):
     job_id: str
+    resume_url: Optional[str] = ""   # optional PDF resume filename / path
 
 class StatusModel(BaseModel):
     application_id: str
@@ -33,7 +34,9 @@ def apply_job(data: ApplicationModel, request: Request):
         "foundation_id": user.get("foundation_id"),
         "company": job.get("company"),
         "position": job.get("position"),
+        "created_by": job.get("created_by", ""),   # recruiter's user_id
         "status": "pending",
+        "resume_url": data.resume_url or "",
         "applied_at": datetime.utcnow().isoformat(),
     }
     db.vgulg_applications.insert_one(app)
@@ -45,6 +48,17 @@ def my_applications(request: Request):
     user = get_current_user(request)
     db = get_db()
     apps = list(db.vgulg_applications.find({"user_id": user["_id"]}).sort("applied_at", -1))
+    return {"status": True, "result": apps}
+
+# ── Applications for Recruiter's own Jobs ────────────────
+@router.get("/recruiter-jobs")
+def recruiter_applications(request: Request):
+    user = get_current_user(request)
+    if user["role"] not in ["admin", "recruiter"]:
+        raise HTTPException(status_code=403, detail="Access denied.")
+    db = get_db()
+    # Get all applications where the job was posted by this recruiter
+    apps = list(db.vgulg_applications.find({"created_by": user["_id"]}).sort("applied_at", -1))
     return {"status": True, "result": apps}
 
 # ── Applications for a Job (Recruiter/Admin) ─────────────

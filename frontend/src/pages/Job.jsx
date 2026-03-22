@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
 import Navbar from "../components/shared/Navbar";
 import { useUserContext } from "../context/UserContext";
-import { FiLock } from "react-icons/fi";
+import { FiLock, FiPaperclip } from "react-icons/fi";
 import { MdAccessTime } from "react-icons/md";
 
 import advancedFormat from "dayjs/plugin/advancedFormat";
@@ -19,6 +19,8 @@ const Job = () => {
     const navigate = useNavigate();
     const { user } = useUserContext();
     const [applying, setApplying] = useState(false);
+    const [resumeFile, setResumeFile] = useState(null);
+    const fileInputRef = useRef(null);
 
     const isLoggedIn = user && user.email;
 
@@ -38,6 +40,17 @@ const Job = () => {
         },
     });
 
+    const handleResumeChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (file.type !== "application/pdf") {
+            Swal.fire({ icon: "warning", title: "PDF Only", text: "Please select a PDF file." });
+            e.target.value = "";
+            return;
+        }
+        setResumeFile(file);
+    };
+
     const handleApply = async () => {
         if (!isLoggedIn) {
             navigate("/login", { state: { from: `/job/${id}` } });
@@ -47,14 +60,16 @@ const Job = () => {
         try {
             const response = await axios.post(
                 `http://localhost:8000/api/v1/applications/apply`,
-                { job_id: id },
+                { job_id: id, resume_url: resumeFile ? resumeFile.name : "" },
                 { withCredentials: true }
             );
             Swal.fire({
                 icon: "success",
-                title: "Applied!",
+                title: "Applied! 🎉",
                 text: response?.data?.message,
             });
+            setResumeFile(null);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         } catch (error) {
             Swal.fire({
                 icon: "error",
@@ -138,13 +153,48 @@ const Job = () => {
 
                         <div className="apply-actions">
                             {isLoggedIn ? (
-                                <button
-                                    className="apply-btn"
-                                    onClick={handleApply}
-                                    disabled={applying}
-                                >
-                                    {applying ? "Submitting..." : "Apply Now"}
-                                </button>
+                                <div className="apply-logged-in">
+                                    {/* Resume Upload */}
+                                    <div className="resume-section">
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="application/pdf"
+                                            id="resume-upload"
+                                            style={{ display: "none" }}
+                                            onChange={handleResumeChange}
+                                        />
+                                        <button
+                                            type="button"
+                                            className="resume-btn"
+                                            onClick={() => fileInputRef.current?.click()}
+                                        >
+                                            <FiPaperclip />
+                                            {resumeFile ? "Change Resume" : "Attach Resume (PDF)"}
+                                        </button>
+                                        {resumeFile && (
+                                            <div className="resume-preview">
+                                                <span className="resume-icon">📄</span>
+                                                <span className="resume-name">{resumeFile.name}</span>
+                                                <button
+                                                    className="resume-remove"
+                                                    onClick={() => {
+                                                        setResumeFile(null);
+                                                        if (fileInputRef.current) fileInputRef.current.value = "";
+                                                    }}
+                                                >✕</button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        className="apply-btn"
+                                        onClick={handleApply}
+                                        disabled={applying}
+                                    >
+                                        {applying ? "Submitting..." : "Apply Now"}
+                                    </button>
+                                </div>
                             ) : (
                                 <div className="guest-apply">
                                     <p className="guest-msg">
@@ -255,8 +305,9 @@ const Wrapper = styled.section`
         margin-top: calc(20px + 0.5vw);
         padding: 1.5rem;
         background: #f8f9ff;
-        border-radius: 8px;
-        border-left: 4px solid var(--color-accent, #e87d2c);
+        border-radius: 12px;
+        border-left: 4px solid #f59e0b;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     .apply .info {
         font-size: calc(12px + 0.15vw);
@@ -265,21 +316,58 @@ const Wrapper = styled.section`
         margin-bottom: 1rem;
     }
     .apply-actions { margin-top: 1rem; }
+    .apply-logged-in { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Resume upload */
+    .resume-section { display: flex; flex-direction: column; gap: 10px; }
+    .resume-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 10px 20px;
+        background: white;
+        border: 2px dashed #d97706;
+        border-radius: 10px;
+        font-size: 14px; font-weight: 600; color: #92400e;
+        cursor: pointer; transition: 0.2s;
+        width: fit-content;
+    }
+    .resume-btn:hover { background: #fffbeb; border-color: #f59e0b; color: #78350f; }
+
+    .resume-preview {
+        display: inline-flex; align-items: center; gap: 10px;
+        padding: 10px 16px;
+        background: #fffbeb; border: 1px solid #fde68a;
+        border-radius: 10px;
+        font-size: 13px; font-weight: 600; color: #92400e;
+        max-width: 420px;
+    }
+    .resume-icon { font-size: 20px; flex-shrink: 0; }
+    .resume-name {
+        flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .resume-remove {
+        background: none; border: none; font-size: 15px; cursor: pointer;
+        color: #b45309; opacity: 0.7; padding: 0 2px;
+        transition: 0.15s; flex-shrink: 0;
+    }
+    .resume-remove:hover { opacity: 1; color: #dc2626; }
 
     .apply-btn {
-        padding: 10px 28px;
-        background-color: var(--color-accent, #e87d2c);
+        padding: 12px 32px;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
         color: #fff;
         border: none;
-        border-radius: 6px;
+        border-radius: 10px;
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
-        transition: background 0.25s;
+        transition: 0.25s;
         letter-spacing: 0.5px;
+        box-shadow: 0 4px 14px rgba(245,158,11,0.35);
+        width: fit-content;
     }
-    .apply-btn:hover { background-color: #c8641a; }
-    .apply-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .apply-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,158,11,0.45); }
+    .apply-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
 
     .guest-apply .guest-msg {
         font-size: 14px;
