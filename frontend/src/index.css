@@ -94,7 +94,20 @@ body {
 a { text-decoration: none; color: inherit; }
 img { max-width: 100%; display: block; }
 
-/* ── Cursor sanity: only real interactive elements use pointer ── */
+/* ══════════════════════════════════════════════════════════════
+   CURSOR & TEXT-SELECTION SANITY
+   Prevents the blinking I-beam / text-caret from appearing on
+   any non-input UI element when the user clicks on text.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Step 1: Default arrow cursor + disable text selection everywhere */
+* {
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Step 2: Only truly interactive elements get pointer */
 button, [role="button"], a, label[for],
 input[type="checkbox"], input[type="radio"],
 input[type="submit"], input[type="button"],
@@ -102,14 +115,19 @@ select, summary, [tabindex]:not([tabindex="-1"]) {
     cursor: pointer;
 }
 
+/* Step 3: Text inputs get text cursor + re-enable selection & caret */
 input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
-textarea {
+textarea,
+[contenteditable] {
     cursor: text;
+    user-select: text;
+    -webkit-user-select: text;
+    caret-color: auto;
 }
 
-/* Everything else (divs, spans, p, h*, td, th, li, etc.) — no pointer unless explicitly set */
-div, span, p, h1, h2, h3, h4, h5, h6, section, article, aside, header,
-footer, main, nav, ul, ol, li, table, thead, tbody, tr, td, th {
-    cursor: default;
+/* Step 4: Allow text selection inside input wrappers if needed */
+input, textarea, [contenteditable] {
+    user-select: text;
+    -webkit-user-select: text;
 }
 
