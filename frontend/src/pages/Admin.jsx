@@ -1,0 +1,353 @@
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import axios from "axios";
+import styled from "styled-components";
+import LoadingComTwo from "../components/shared/LoadingComTwo";
+import Swal from "sweetalert2";
+
+const API = "http://localhost:8000/api/v1";
+
+const fetcher = (url) => axios.get(url, { withCredentials: true }).then(r => r.data);
+
+const STATUS_COLOR = {
+    pending:   { bg: "#fef3c7", color: "#92400e" },
+    interview: { bg: "#dbeafe", color: "#1e3a8a" },
+    accepted:  { bg: "#d1fae5", color: "#065f46" },
+    declined:  { bg: "#fee2e2", color: "#991b1b" },
+};
+
+const Admin = () => {
+    const qc = useQueryClient();
+    const [activeTab, setActiveTab] = useState("overview");
+    const [appFilter, setAppFilter] = useState("all");
+
+    // Stats
+    const { data: stats, isPending: statsLoading } = useQuery({
+        queryKey: ["admin_stats"],
+        queryFn: () => fetcher(`${API}/admin/stats`),
+    });
+
+    // All Users
+    const { data: usersData } = useQuery({
+        queryKey: ["admin_users"],
+        queryFn: () => fetcher(`${API}/admin/users`),
+        enabled: activeTab === "users",
+    });
+
+    // All Applications
+    const { data: appsData, refetch: refetchApps } = useQuery({
+        queryKey: ["admin_applications"],
+        queryFn: () => fetcher(`${API}/applications/all`),
+        enabled: activeTab === "applications",
+    });
+
+    // Change Role
+    const roleMutation = useMutation({
+        mutationFn: ({ user_id, role }) =>
+            axios.put(`${API}/admin/role`, { user_id, role }, { withCredentials: true }),
+        onSuccess: () => {
+            Swal.fire("Done!", "User role updated.", "success");
+            qc.invalidateQueries(["admin_users"]);
+            qc.invalidateQueries(["admin_stats"]);
+        },
+        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed.", "error"),
+    });
+
+    // Update Application Status (admit/decline)
+    const appStatusMutation = useMutation({
+        mutationFn: ({ application_id, status }) =>
+            axios.put(`${API}/applications/status`, { application_id, status }, { withCredentials: true }),
+        onSuccess: (_, vars) => {
+            const label = vars.status === "accepted" ? "✅ Admitted" : vars.status === "declined" ? "❌ Declined" : "Updated";
+            Swal.fire({ icon: "success", title: label, text: `Application status set to "${vars.status}".`, timer: 1800, showConfirmButton: false });
+            qc.invalidateQueries(["admin_applications"]);
+            qc.invalidateQueries(["admin_stats"]);
+        },
+        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed to update.", "error"),
+    });
+
+    if (statsLoading) return <LoadingComTwo />;
+
+    const s = stats?.result || {};
+
+    // Filter applications
+    const allApps = appsData?.result || [];
+    const filteredApps = appFilter === "all" ? allApps : allApps.filter(a => a.status === appFilter);
+
+    const statCards = [
+        { label: "Total Members",       value: s.total_users,         color: "#4f6ef7", icon: "👥" },
+        { label: "Admins",              value: s.admins,              color: "#8b5cf6", icon: "🛡️" },
+        { label: "Recruiters",          value: s.recruiters,          color: "#14b8a6", icon: "🧑‍💼" },
+        { label: "Job Seekers",         value: s.members,             color: "#10b981", icon: "👨‍💻" },
+        { label: "Total Jobs",          value: s.total_jobs,          color: "#f97316", icon: "💼" },
+        { label: "Open Jobs",           value: s.open_jobs,           color: "#22c55e", icon: "🟢" },
+        { label: "Total Applications",  value: s.total_applications,  color: "#6366f1", icon: "📋" },
+        { label: "Pending Review",      value: s.pending_apps,        color: "#f59e0b", icon: "⏳" },
+        { label: "Interviews",          value: s.interview_apps,      color: "#3b82f6", icon: "🎙️" },
+        { label: "Admitted",            value: s.accepted_apps,       color: "#10b981", icon: "✅" },
+        { label: "Declined",            value: s.declined_apps,       color: "#ef4444", icon: "❌" },
+    ];
+
+    const tabs = ["overview", "applications", "users"];
+
+    return (
+        <Wrapper>
+            <div className="header">
+                <h2>🛡️ Admin Control Panel</h2>
+                <p>Manage members, job applications, roles, and admissions</p>
+            </div>
+
+            {/* Tab Nav */}
+            <div className="tabs">
+                {tabs.map(t => (
+                    <button
+                        key={t}
+                        className={`tab ${activeTab === t ? "active" : ""}`}
+                        onClick={() => setActiveTab(t)}
+                    >
+                        {t === "overview"      ? "📊 Overview"
+                       : t === "applications"  ? `📋 Applications (${s.total_applications || 0})`
+                       : "👥 All Members"}
+                    </button>
+                ))}
+            </div>
+
+            {/* ── OVERVIEW ── */}
+            {activeTab === "overview" && (
+                <div className="stat-grid">
+                    {statCards.map(c => (
+                        <div className="stat-card" key={c.label} style={{ borderLeftColor: c.color }}>
+                            <div className="stat-icon">{c.icon}</div>
+                            <div className="stat-num" style={{ color: c.color }}>{c.value ?? "—"}</div>
+                            <div className="stat-label">{c.label}</div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* ── APPLICATIONS ── */}
+            {activeTab === "applications" && (
+                <div className="section">
+                    <div className="apps-header">
+                        <h3>📋 All Job Applications</h3>
+                        <div className="filter-row">
+                            {["all", "pending", "interview", "accepted", "declined"].map(f => (
+                                <button
+                                    key={f}
+                                    className={`filter-btn ${appFilter === f ? "active" : ""}`}
+                                    onClick={() => setAppFilter(f)}
+                                >
+                                    {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {!filteredApps.length ? (
+                        <div className="empty">✅ No applications found for this filter.</div>
+                    ) : (
+                        <div className="app-table-wrap">
+                            <table className="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Applicant</th>
+                                        <th>Foundation ID</th>
+                                        <th>Job Position</th>
+                                        <th>Company</th>
+                                        <th>Applied</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredApps.map((app, idx) => {
+                                        const sc = STATUS_COLOR[app.status] || { bg: "#f3f4f6", color: "#374151" };
+                                        const appliedDate = app.applied_at
+                                            ? new Date(app.applied_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                                            : "—";
+                                        return (
+                                            <tr key={app._id}>
+                                                <td>{idx + 1 < 10 ? `0${idx + 1}` : idx + 1}</td>
+                                                <td className="applicant-name">{app.username || "—"}</td>
+                                                <td><span className="fid-tag">{app.foundation_id || "—"}</span></td>
+                                                <td className="job-pos">{app.position || "—"}</td>
+                                                <td>{app.company || "—"}</td>
+                                                <td className="date">{appliedDate}</td>
+                                                <td>
+                                                    <span className="status-pill"
+                                                        style={{ background: sc.bg, color: sc.color }}>
+                                                        {app.status || "pending"}
+                                                    </span>
+                                                </td>
+                                                <td className="acts">
+                                                    {app.status !== "accepted" && (
+                                                        <button
+                                                            className="act-btn admit"
+                                                            onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "accepted" })}
+                                                            disabled={appStatusMutation.isPending}
+                                                        >
+                                                            ✅ Admit
+                                                        </button>
+                                                    )}
+                                                    {app.status !== "interview" && app.status !== "accepted" && (
+                                                        <button
+                                                            className="act-btn interview"
+                                                            onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "interview" })}
+                                                            disabled={appStatusMutation.isPending}
+                                                        >
+                                                            🎙️ Interview
+                                                        </button>
+                                                    )}
+                                                    {app.status !== "declined" && (
+                                                        <button
+                                                            className="act-btn decline"
+                                                            onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "declined" })}
+                                                            disabled={appStatusMutation.isPending}
+                                                        >
+                                                            ❌ Decline
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ── ALL USERS ── */}
+            {activeTab === "users" && (
+                <div className="section">
+                    <h3>👥 All Members ({usersData?.result?.length || 0})</h3>
+                    <div className="user-list">
+                        {usersData?.result?.map(u => (
+                            <div className="user-row" key={u._id}>
+                                <div className="user-info">
+                                    <span className="uname">{u.username}</span>
+                                    <span className="ufid">🪪 {u.foundation_id}</span>
+                                    <span className="uemail">{u.email}</span>
+                                    <span className={`urole role-${u.role}`}>{u.role}</span>
+                                    {!u.is_approved && <span className="upending">⏳ Pending</span>}
+                                </div>
+                                <div className="user-actions">
+                                    <select
+                                        className="role-select"
+                                        defaultValue={u.role}
+                                        onChange={(e) => roleMutation.mutate({ user_id: u._id, role: e.target.value })}
+                                    >
+                                        <option value="user">user</option>
+                                        <option value="recruiter">recruiter</option>
+                                        <option value="admin">admin</option>
+                                    </select>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </Wrapper>
+    );
+};
+
+const Wrapper = styled.section`
+    padding: 8px 0 40px;
+
+    .header { margin-bottom: 24px; }
+    .header h2 { font-size: 22px; font-weight: 800; color: #111; }
+    .header p  { font-size: 13px; color: #6b7280; margin-top: 4px; }
+
+    .tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
+    .tab {
+        padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 600;
+        border: 1.5px solid #e5e7eb; background: white; cursor: pointer; color: #6b7280; transition: 0.2s;
+    }
+    .tab.active, .tab:hover { background: #f59e0b; color: white; border-color: #f59e0b; }
+
+    /* Overview grid */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+
+    .stat-card {
+        background: white; border: 1px solid #f0f0f0; border-left: 4px solid;
+        border-radius: 14px; padding: 20px; transition: 0.25s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .stat-icon { font-size: 26px; margin-bottom: 8px; }
+    .stat-num  { font-size: 34px; font-weight: 900; line-height: 1; margin-bottom: 6px; }
+    .stat-label { font-size: 12px; color: #6b7280; font-weight: 500; }
+
+    /* Section */
+    .section { background: white; border: 1px solid #f0f0f0; border-radius: 16px; padding: 24px; }
+    .section h3 { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 18px; }
+    .empty { text-align: center; color: #6b7280; padding: 32px; font-size: 15px; }
+
+    /* Applications */
+    .apps-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn {
+        padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
+        border: 1.5px solid #e5e7eb; background: white; cursor: pointer; color: #6b7280; transition: 0.15s;
+    }
+    .filter-btn.active { background: #111; color: white; border-color: #111; }
+
+    .app-table-wrap { overflow-x: auto; }
+    .app-table {
+        width: 100%; border-collapse: collapse; font-size: 13px;
+        border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;
+    }
+    .app-table thead { background: linear-gradient(135deg, #1e293b, #334155); color: white; }
+    .app-table th, .app-table td { padding: 11px 14px; text-align: left; }
+    .app-table tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.12s; }
+    .app-table tbody tr:hover { background: #f8faff; }
+    .app-table tbody tr:last-child { border-bottom: none; }
+
+    .applicant-name { font-weight: 700; color: #111; }
+    .fid-tag { background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 10px; font-size: 11px; font-weight: 700; }
+    .job-pos { font-weight: 600; color: #374151; text-transform: capitalize; }
+    .date { font-size: 12px; color: #9ca3af; }
+
+    .status-pill {
+        display: inline-block; padding: 3px 12px; border-radius: 999px;
+        font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+    }
+
+    .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .act-btn {
+        padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+        border: none; cursor: pointer; transition: 0.15s; white-space: nowrap;
+    }
+    .act-btn:hover { transform: translateY(-1px); }
+    .act-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .act-btn.admit    { background: #d1fae5; color: #065f46; }
+    .act-btn.admit:hover { background: #10b981; color: white; }
+    .act-btn.interview { background: #dbeafe; color: #1e40af; }
+    .act-btn.interview:hover { background: #3b82f6; color: white; }
+    .act-btn.decline  { background: #fee2e2; color: #991b1b; }
+    .act-btn.decline:hover { background: #ef4444; color: white; }
+
+    /* Users */
+    .user-list { display: flex; flex-direction: column; gap: 10px; }
+    .user-row {
+        display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        padding: 14px 18px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; flex-wrap: wrap;
+    }
+    .user-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .uname  { font-size: 14px; font-weight: 700; color: #111; }
+    .ufid   { font-size: 12px; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 10px; font-weight: 600; }
+    .uemail { font-size: 12px; color: #6b7280; }
+    .urole  { font-size: 11px; font-weight: 700; border-radius: 999px; padding: 2px 10px; text-transform: uppercase; }
+    .role-admin     { background: #fce7f3; color: #9d174d; }
+    .role-recruiter { background: #d1fae5; color: #065f46; }
+    .role-user      { background: #dbeafe; color: #1e40af; }
+    .upending { font-size: 11px; color: #d97706; font-weight: 600; }
+    .user-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+    .role-select { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; outline: none; }
+`;
+
+export default Admin;
