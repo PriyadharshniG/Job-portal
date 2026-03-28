@@ -57,11 +57,11 @@ const Register = () => {
                 <h1>Create Account</h1>
                 <p className="sub">Register to access the VGLUG Job Portal</p>
 
-                <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
+                <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" noValidate>
                     {/* Username */}
                     <div className="field">
                         <label>Full Name</label>
-                        <input type="text" placeholder="Your full name"
+                        <input type="text" placeholder="Your full name" autoComplete="off"
                             {...register("username", { required: "Name is required", minLength: { value: 3, message: "Min 3 characters" } })} />
                         {errors.username && <span className="err">{errors.username.message}</span>}
                     </div>
@@ -69,7 +69,7 @@ const Register = () => {
                     {/* Foundation ID */}
                     <div className="field">
                         <label>Foundation ID <span className="badge">🪪 Your ID</span></label>
-                        <input type="text" placeholder="e.g. VGLUG-001 or your own ID"
+                        <input type="text" placeholder="e.g. VGLUG-001 or your own ID" autoComplete="off"
                             {...register("foundation_id", { required: "Foundation ID is required" })} />
                         {errors.foundation_id && <span className="err">{errors.foundation_id.message}</span>}
                     </div>
@@ -77,7 +77,7 @@ const Register = () => {
                     {/* Email */}
                     <div className="field">
                         <label>Email</label>
-                        <input type="email" placeholder="your@email.com"
+                        <input type="email" placeholder="your@email.com" autoComplete="new-email"
                             {...register("email", { required: "Email is required" })} />
                         {errors.email && <span className="err">{errors.email.message}</span>}
                     </div>
@@ -94,7 +94,7 @@ const Register = () => {
                     {/* Password */}
                     <div className="field">
                         <label>Password</label>
-                        <input type="password" placeholder="Min 8 chars, 1 uppercase, 1 number"
+                        <input type="password" placeholder="Min 8 chars, 1 uppercase, 1 number" autoComplete="new-password"
                             {...register("password", {
                                 required: "Password is required",
                                 minLength: { value: 8, message: "Min 8 characters" },
@@ -106,7 +106,7 @@ const Register = () => {
                     {/* Confirm Password */}
                     <div className="field">
                         <label>Confirm Password</label>
-                        <input type="password" placeholder="Repeat password"
+                        <input type="password" placeholder="Repeat password" autoComplete="new-password"
                             {...register("confirmPassword", { required: "Please confirm password" })} />
                         {errors.confirmPassword && <span className="err">{errors.confirmPassword.message}</span>}
                     </div>

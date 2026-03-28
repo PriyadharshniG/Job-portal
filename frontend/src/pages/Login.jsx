@@ -82,6 +82,7 @@ const Login = () => {
                                     <input
                                         type="text"
                                         placeholder="e.g. VGLUG-001"
+                                        autoComplete="off"
                                         {...register("foundation_id", { required: "Foundation ID is required" })}
                                     />
                                 </div>
@@ -101,6 +102,7 @@ const Login = () => {
                                     <input
                                         type={showPass ? "text" : "password"}
                                         placeholder="Enter your password"
+                                        autoComplete="current-password"
                                         {...register("password", { required: "Password is required" })}
                                     />
                                     <button type="button" className="eye" onClick={() => setShowPass(!showPass)} tabIndex={-1}>

@@ -34,7 +34,7 @@ VGLUG-JOB-PORTAL/
 │   ├── backend/                # FastAPI Python backend
 │   │   ├── routers/            # API route handlers
 │   │   │   ├── auth.py         # Registration & Login
-│   │   │   ├── jobs.py         # Job CRUD & search
+cdarch
 │   │   │   ├── admin.py        # Admin controls
 │   │   │   ├── applications.py # Job applications
 │   │   │   └── users.py        # User profile
