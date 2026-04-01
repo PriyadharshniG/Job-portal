@@ -35,7 +35,7 @@ const Admin = () => {
     });
 
     // All Applications
-    const { data: appsData, refetch: refetchApps } = useQuery({
+    const { data: appsData } = useQuery({
         queryKey: ["admin_applications"],
         queryFn: () => fetcher(`${API}/applications/all`),
         enabled: activeTab === "applications",
@@ -46,46 +46,93 @@ const Admin = () => {
         mutationFn: ({ user_id, role }) =>
             axios.put(`${API}/admin/role`, { user_id, role }, { withCredentials: true }),
         onSuccess: () => {
-            Swal.fire("Done!", "User role updated.", "success");
+            Swal.fire({ icon: "success", title: "Done!", text: "User role updated.", timer: 1500, showConfirmButton: false });
             qc.invalidateQueries(["admin_users"]);
             qc.invalidateQueries(["admin_stats"]);
         },
         onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed.", "error"),
     });
 
-    // Update Application Status (admit/decline)
+    // Update Application Status
     const appStatusMutation = useMutation({
         mutationFn: ({ application_id, status }) =>
             axios.put(`${API}/applications/status`, { application_id, status }, { withCredentials: true }),
         onSuccess: (_, vars) => {
-            const label = vars.status === "accepted" ? "✅ Admitted" : vars.status === "declined" ? "❌ Declined" : "Updated";
-            Swal.fire({ icon: "success", title: label, text: `Application status set to "${vars.status}".`, timer: 1800, showConfirmButton: false });
+            const label = vars.status === "accepted" ? "✅ Admitted" : vars.status === "declined" ? "❌ Declined" : "✔ Updated";
+            Swal.fire({ icon: "success", title: label, timer: 1600, showConfirmButton: false });
             qc.invalidateQueries(["admin_applications"]);
             qc.invalidateQueries(["admin_stats"]);
         },
-        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed to update.", "error"),
+        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed.", "error"),
     });
+
+    // Delete Application
+    const deleteAppMutation = useMutation({
+        mutationFn: (app_id) =>
+            axios.delete(`${API}/applications/${app_id}`, { withCredentials: true }),
+        onSuccess: () => {
+            Swal.fire({ icon: "success", title: "Deleted!", text: "Application removed.", timer: 1500, showConfirmButton: false });
+            qc.invalidateQueries(["admin_applications"]);
+            qc.invalidateQueries(["admin_stats"]);
+        },
+        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed to delete.", "error"),
+    });
+
+    // Delete User
+    const deleteUserMutation = useMutation({
+        mutationFn: (user_id) =>
+            axios.delete(`${API}/admin/users/${user_id}`, { withCredentials: true }),
+        onSuccess: () => {
+            Swal.fire({ icon: "success", title: "Deleted!", timer: 1500, showConfirmButton: false });
+            qc.invalidateQueries(["admin_users"]);
+            qc.invalidateQueries(["admin_stats"]);
+        },
+        onError: (e) => Swal.fire("Error", e?.response?.data?.detail || "Failed.", "error"),
+    });
+
+    const confirmDeleteApp = (app_id, username) => {
+        Swal.fire({
+            title: `Delete application by "${username}"?`,
+            text: "This action cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#ef4444",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Yes, delete!",
+        }).then(r => { if (r.isConfirmed) deleteAppMutation.mutate(app_id); });
+    };
+
+    const confirmDeleteUser = (user_id, username) => {
+        Swal.fire({
+            title: `Delete user "${username}"?`,
+            text: "This cannot be undone!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#ef4444",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Yes, delete!",
+        }).then(r => { if (r.isConfirmed) deleteUserMutation.mutate(user_id); });
+    };
 
     if (statsLoading) return <LoadingComTwo />;
 
     const s = stats?.result || {};
 
-    // Filter applications
     const allApps = appsData?.result || [];
     const filteredApps = appFilter === "all" ? allApps : allApps.filter(a => a.status === appFilter);
 
     const statCards = [
-        { label: "Total Members",       value: s.total_users,         color: "#4f6ef7", icon: "👥" },
-        { label: "Admins",              value: s.admins,              color: "#8b5cf6", icon: "🛡️" },
-        { label: "Recruiters",          value: s.recruiters,          color: "#14b8a6", icon: "🧑‍💼" },
-        { label: "Job Seekers",         value: s.members,             color: "#10b981", icon: "👨‍💻" },
-        { label: "Total Jobs",          value: s.total_jobs,          color: "#f97316", icon: "💼" },
-        { label: "Open Jobs",           value: s.open_jobs,           color: "#22c55e", icon: "🟢" },
-        { label: "Total Applications",  value: s.total_applications,  color: "#6366f1", icon: "📋" },
-        { label: "Pending Review",      value: s.pending_apps,        color: "#f59e0b", icon: "⏳" },
-        { label: "Interviews",          value: s.interview_apps,      color: "#3b82f6", icon: "🎙️" },
-        { label: "Admitted",            value: s.accepted_apps,       color: "#10b981", icon: "✅" },
-        { label: "Declined",            value: s.declined_apps,       color: "#ef4444", icon: "❌" },
+        { label: "Total Members",      value: s.total_users,        color: "#4f6ef7", icon: "👥" },
+        { label: "Admins",             value: s.admins,             color: "#8b5cf6", icon: "🛡️" },
+        { label: "Recruiters",         value: s.recruiters,         color: "#14b8a6", icon: "🧑‍💼" },
+        { label: "Job Seekers",        value: s.members,            color: "#10b981", icon: "👨‍💻" },
+        { label: "Total Jobs",         value: s.total_jobs,         color: "#f97316", icon: "💼" },
+        { label: "Open Jobs",          value: s.open_jobs,          color: "#22c55e", icon: "🟢" },
+        { label: "Total Applications", value: s.total_applications, color: "#6366f1", icon: "📋" },
+        { label: "Pending Review",     value: s.pending_apps,       color: "#f59e0b", icon: "⏳" },
+        { label: "Interviews",         value: s.interview_apps,     color: "#3b82f6", icon: "🎙️" },
+        { label: "Admitted",           value: s.accepted_apps,      color: "#10b981", icon: "✅" },
+        { label: "Declined",           value: s.declined_apps,      color: "#ef4444", icon: "❌" },
     ];
 
     const tabs = ["overview", "applications", "users"];
@@ -105,9 +152,11 @@ const Admin = () => {
                         className={`tab ${activeTab === t ? "active" : ""}`}
                         onClick={() => setActiveTab(t)}
                     >
-                        {t === "overview"      ? "📊 Overview"
-                       : t === "applications"  ? `📋 Applications (${s.total_applications || 0})`
-                       : "👥 All Members"}
+                        {t === "overview"
+                            ? "📊 Overview"
+                            : t === "applications"
+                            ? `📋 Applications (${s.total_applications || 0})`
+                            : "👥 All Members"}
                     </button>
                 ))}
             </div>
@@ -144,7 +193,7 @@ const Admin = () => {
                     </div>
 
                     {!filteredApps.length ? (
-                        <div className="empty">✅ No applications found for this filter.</div>
+                        <div className="empty">📭 No applications found for this filter.</div>
                     ) : (
                         <div className="app-table-wrap">
                             <table className="app-table">
@@ -155,6 +204,7 @@ const Admin = () => {
                                         <th>Foundation ID</th>
                                         <th>Job Position</th>
                                         <th>Company</th>
+                                        <th>Resume</th>
                                         <th>Applied</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -164,7 +214,9 @@ const Admin = () => {
                                     {filteredApps.map((app, idx) => {
                                         const sc = STATUS_COLOR[app.status] || { bg: "#f3f4f6", color: "#374151" };
                                         const appliedDate = app.applied_at
-                                            ? new Date(app.applied_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                                            ? new Date(app.applied_at).toLocaleDateString("en-IN", {
+                                                  day: "2-digit", month: "short", year: "numeric",
+                                              })
                                             : "—";
                                         return (
                                             <tr key={app._id}>
@@ -173,12 +225,33 @@ const Admin = () => {
                                                 <td><span className="fid-tag">{app.foundation_id || "—"}</span></td>
                                                 <td className="job-pos">{app.position || "—"}</td>
                                                 <td>{app.company || "—"}</td>
+                                                <td>
+                                                    {app.resume_url ? (
+                                                        <a
+                                                            href={`http://localhost:8000${app.resume_url}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="resume-link"
+                                                        >
+                                                            📄 View PDF
+                                                        </a>
+                                                    ) : (
+                                                        <span className="no-resume">—</span>
+                                                    )}
+                                                </td>
                                                 <td className="date">{appliedDate}</td>
                                                 <td>
-                                                    <span className="status-pill"
-                                                        style={{ background: sc.bg, color: sc.color }}>
-                                                        {app.status || "pending"}
-                                                    </span>
+                                                    <div className="status-col">
+                                                        <span className="status-pill"
+                                                            style={{ background: sc.bg, color: sc.color }}>
+                                                            {app.status || "pending"}
+                                                        </span>
+                                                        {app.status === "declined" && app.rejected_by_name && (
+                                                            <span className="rejected-by-tag">
+                                                                by {app.rejected_by_name}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="acts">
                                                     {app.status !== "accepted" && (
@@ -186,28 +259,27 @@ const Admin = () => {
                                                             className="act-btn admit"
                                                             onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "accepted" })}
                                                             disabled={appStatusMutation.isPending}
-                                                        >
-                                                            ✅ Admit
-                                                        </button>
+                                                        >✅ Admit</button>
                                                     )}
                                                     {app.status !== "interview" && app.status !== "accepted" && (
                                                         <button
                                                             className="act-btn interview"
                                                             onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "interview" })}
                                                             disabled={appStatusMutation.isPending}
-                                                        >
-                                                            🎙️ Interview
-                                                        </button>
+                                                        >🎙️ Interview</button>
                                                     )}
                                                     {app.status !== "declined" && (
                                                         <button
                                                             className="act-btn decline"
                                                             onClick={() => appStatusMutation.mutate({ application_id: app._id, status: "declined" })}
                                                             disabled={appStatusMutation.isPending}
-                                                        >
-                                                            ❌ Decline
-                                                        </button>
+                                                        >❌ Decline</button>
                                                     )}
+                                                    <button
+                                                        className="act-btn delete"
+                                                        onClick={() => confirmDeleteApp(app._id, app.username)}
+                                                        disabled={deleteAppMutation.isPending}
+                                                    >🗑️ Delete</button>
                                                 </td>
                                             </tr>
                                         );
@@ -243,6 +315,11 @@ const Admin = () => {
                                         <option value="recruiter">recruiter</option>
                                         <option value="admin">admin</option>
                                     </select>
+                                    <button
+                                        className="del-btn"
+                                        onClick={() => confirmDeleteUser(u._id, u.username)}
+                                        disabled={deleteUserMutation.isPending}
+                                    >🗑️</button>
                                 </div>
                             </div>
                         ))}
@@ -260,12 +337,15 @@ const Wrapper = styled.section`
     .header h2 { font-size: 22px; font-weight: 800; color: #111; }
     .header p  { font-size: 13px; color: #6b7280; margin-top: 4px; }
 
+    /* Tabs */
     .tabs { display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap; }
     .tab {
         padding: 9px 20px; border-radius: 999px; font-size: 13px; font-weight: 600;
-        border: 1.5px solid #e5e7eb; background: white; cursor: pointer; color: #6b7280; transition: 0.2s;
+        border: 1.5px solid #e5e7eb; background: white; cursor: pointer; color: #6b7280;
+        transition: all 0.2s ease;
     }
-    .tab.active, .tab:hover { background: #f59e0b; color: white; border-color: #f59e0b; }
+    .tab:hover { border-color: #4f6ef7; color: #4f6ef7; background: #eef1ff; }
+    .tab.active { background: linear-gradient(135deg, #4f6ef7, #7b93f9); color: white; border-color: transparent; box-shadow: 0 4px 14px rgba(79,110,247,0.35); }
 
     /* Overview grid */
     .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
@@ -285,17 +365,19 @@ const Wrapper = styled.section`
     /* Section */
     .section { background: white; border: 1px solid #f0f0f0; border-radius: 16px; padding: 24px; }
     .section h3 { font-size: 17px; font-weight: 800; color: #111; margin-bottom: 18px; }
-    .empty { text-align: center; color: #6b7280; padding: 32px; font-size: 15px; }
+    .empty { text-align: center; color: #6b7280; padding: 40px; font-size: 15px; }
 
-    /* Applications */
+    /* Applications filter */
     .apps-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
     .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
     .filter-btn {
         padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600;
         border: 1.5px solid #e5e7eb; background: white; cursor: pointer; color: #6b7280; transition: 0.15s;
     }
-    .filter-btn.active { background: #111; color: white; border-color: #111; }
+    .filter-btn:hover { border-color: #4f6ef7; color: #4f6ef7; }
+    .filter-btn.active { background: #1e293b; color: white; border-color: #1e293b; }
 
+    /* Applications table */
     .app-table-wrap { overflow-x: auto; }
     .app-table {
         width: 100%; border-collapse: collapse; font-size: 13px;
@@ -312,14 +394,29 @@ const Wrapper = styled.section`
     .job-pos { font-weight: 600; color: #374151; text-transform: capitalize; }
     .date { font-size: 12px; color: #9ca3af; }
 
+    .resume-link {
+        color: #4f6ef7; font-weight: 700; font-size: 12px;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 8px; background: #eef1ff; border-radius: 6px; transition: 0.15s;
+    }
+    .resume-link:hover { background: #4f6ef7; color: white; }
+    .no-resume { color: #9ca3af; font-size: 12px; }
+
+    .status-col { display: flex; flex-direction: column; gap: 4px; }
     .status-pill {
         display: inline-block; padding: 3px 12px; border-radius: 999px;
         font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px;
+        width: fit-content;
+    }
+    .rejected-by-tag {
+        font-size: 10px; color: #991b1b; background: #fee2e2;
+        border-radius: 4px; padding: 1px 6px; font-weight: 600;
+        width: fit-content;
     }
 
-    .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .acts { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
     .act-btn {
-        padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+        padding: 4px 10px; border-radius: 7px; font-size: 11px; font-weight: 700;
         border: none; cursor: pointer; transition: 0.15s; white-space: nowrap;
     }
     .act-btn:hover { transform: translateY(-1px); }
@@ -330,13 +427,17 @@ const Wrapper = styled.section`
     .act-btn.interview:hover { background: #3b82f6; color: white; }
     .act-btn.decline  { background: #fee2e2; color: #991b1b; }
     .act-btn.decline:hover { background: #ef4444; color: white; }
+    .act-btn.delete   { background: #f3f4f6; color: #374151; }
+    .act-btn.delete:hover { background: #ef4444; color: white; }
 
     /* Users */
     .user-list { display: flex; flex-direction: column; gap: 10px; }
     .user-row {
         display: flex; justify-content: space-between; align-items: center; gap: 16px;
-        padding: 14px 18px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; flex-wrap: wrap;
+        padding: 14px 18px; background: #f9fafb; border: 1px solid #e5e7eb;
+        border-radius: 12px; flex-wrap: wrap; transition: 0.15s;
     }
+    .user-row:hover { border-color: #c7d2fe; background: #f8faff; }
     .user-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .uname  { font-size: 14px; font-weight: 700; color: #111; }
     .ufid   { font-size: 12px; background: #fef3c7; color: #92400e; border-radius: 999px; padding: 2px 10px; font-weight: 600; }
@@ -347,7 +448,17 @@ const Wrapper = styled.section`
     .role-user      { background: #dbeafe; color: #1e40af; }
     .upending { font-size: 11px; color: #d97706; font-weight: 600; }
     .user-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-    .role-select { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600; cursor: pointer; outline: none; }
+    .role-select {
+        border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 6px 10px;
+        font-size: 12px; font-weight: 600; cursor: pointer; outline: none;
+        transition: 0.15s;
+    }
+    .role-select:focus { border-color: #4f6ef7; }
+    .del-btn {
+        padding: 6px 10px; background: #fee2e2; border: none; border-radius: 8px;
+        font-size: 14px; cursor: pointer; transition: 0.15s;
+    }
+    .del-btn:hover { background: #ef4444; }
 `;
 
 export default Admin;

@@ -7,61 +7,35 @@ import {
 import { NavLink } from "react-router-dom";
 import { useUserContext } from "../../context/UserContext";
 
-const DashboardNavLinks = () => {
+const DashboardNavLinks = ({ collapsed = false }) => {
     const { user } = useUserContext();
 
-    if (user?.role === "admin") {
-        return (
-            <div className="nav-links">
-                {AdminLinks?.map((link) => {
-                    const { text, path, icon } = link;
-                    if (path === "admin" && user?.role !== "admin") {
-                        return;
-                    }
-                    return (
-                        <NavLink to={path} key={text} className="nav-link" end>
-                            <span className="icon">{icon}</span>
-                            {text}
-                        </NavLink>
-                    );
-                })}
-            </div>
-        );
-    }
-    if (user?.role === "recruiter") {
-        return (
-            <div className="nav-links">
-                {RecruiterLinks?.map((link) => {
-                    const { text, path, icon } = link;
-                    if (path === "admin" && user?.role !== "admin") {
-                        return;
-                    }
-                    return (
-                        <NavLink to={path} key={text} className="nav-link" end>
-                            <span className="icon">{icon}</span>
-                            {text}
-                        </NavLink>
-                    );
-                })}
-            </div>
-        );
-    }
-    return (
-        <div className="nav-links">
-            {UserLinks?.map((link) => {
-                const { text, path, icon } = link;
-                if (path === "admin" && user?.role !== "admin") {
-                    return;
-                }
-                return (
-                    <NavLink to={path} key={text} className="nav-link" end>
-                        <span className="icon">{icon}</span>
-                        {text}
-                    </NavLink>
-                );
-            })}
-        </div>
-    );
+    const renderLinks = (links) =>
+        links?.map((link) => {
+            const { text, path, icon } = link;
+            if (path === "admin" && user?.role !== "admin") return null;
+            return (
+                <NavLink
+                    to={path}
+                    key={text}
+                    className="nav-link"
+                    end
+                    data-tooltip={collapsed ? text : undefined}
+                >
+                    <span className="icon">{icon}</span>
+                    <span className="link-text">{text}</span>
+                </NavLink>
+            );
+        });
+
+    const links =
+        user?.role === "admin"
+            ? AdminLinks
+            : user?.role === "recruiter"
+            ? RecruiterLinks
+            : UserLinks;
+
+    return <div className="nav-links">{renderLinks(links)}</div>;
 };
 
 export default DashboardNavLinks;

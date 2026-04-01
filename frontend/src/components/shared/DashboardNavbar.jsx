@@ -1,4 +1,3 @@
-
 import styled from "styled-components";
 import { BiMenuAltLeft } from "react-icons/bi";
 import { FiLogOut } from "react-icons/fi";
@@ -6,15 +5,22 @@ import Logo from "../Logo";
 import { useDashboardContext } from "../../Layout/DashboardLayout";
 
 const DashboardNavbar = () => {
-    const { showSidebar, setShowSidebar, handleLogout } = useDashboardContext();
+    const { showSidebar, setShowSidebar, sidebarCollapsed, setSidebarCollapsed, handleLogout } = useDashboardContext();
+
+    const handleToggle = () => {
+        // Desktop: toggle icon-only mode. Mobile: toggle overlay sidebar
+        if (window.innerWidth >= 992) {
+            setSidebarCollapsed(!sidebarCollapsed);
+        } else {
+            setShowSidebar(!showSidebar);
+        }
+    };
+
     return (
         <Wrapper>
             <div className="nav-container">
                 <div className="start">
-                    <button
-                        className="toggler"
-                        onClick={() => setShowSidebar(!showSidebar)}
-                    >
+                    <button className="toggler" onClick={handleToggle} title="Toggle Sidebar">
                         <BiMenuAltLeft className="icon" />
                     </button>
                 </div>
@@ -57,12 +63,12 @@ const Wrapper = styled.nav`
         border: 1px solid rgba(0, 0, 0, 0.14);
         width: max-content;
         padding: 3px;
-        transition: all 0.3s linear;
+        transition: all 0.25s ease;
     }
-
     .start .toggler:hover {
         background-color: var(--color-primary);
         color: var(--color-white);
+        transform: scale(1.05);
     }
 
     .end .logout {
@@ -79,10 +85,6 @@ const Wrapper = styled.nav`
     @media (min-width: 992px) {
         position: sticky;
         top: 0;
-
-        /* .nav-container {
-            padding: 0 calc(1rem + 0.7vw);
-        } */
     }
 `;
 

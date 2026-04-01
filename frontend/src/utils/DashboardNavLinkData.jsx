@@ -61,7 +61,7 @@ const UserLinks = [
         icon: <FiUser />,
     },
     {
-        text: "Applications",
+        text: "My Applications",
         path: "my-jobs",
         icon: <FaBriefcase />,
     },

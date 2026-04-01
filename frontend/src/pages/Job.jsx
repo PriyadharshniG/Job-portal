@@ -58,18 +58,43 @@ const Job = () => {
         }
         setApplying(true);
         try {
+            // Step 1: Upload resume PDF to server (if selected)
+            let resume_url = "";
+            if (resumeFile) {
+                const formData = new FormData();
+                formData.append("file", resumeFile);
+                const uploadRes = await axios.post(
+                    `http://localhost:8000/api/v1/applications/upload-resume`,
+                    formData,
+                    {
+                        withCredentials: true,
+                        headers: { "Content-Type": "multipart/form-data" },
+                    }
+                );
+                resume_url = uploadRes.data.resume_url;
+            }
+
+            // Step 2: Submit application with server resume URL
             const response = await axios.post(
                 `http://localhost:8000/api/v1/applications/apply`,
-                { job_id: id, resume_url: resumeFile ? resumeFile.name : "" },
+                { job_id: id, resume_url },
                 { withCredentials: true }
             );
-            Swal.fire({
+            const result = await Swal.fire({
                 icon: "success",
                 title: "Applied! 🎉",
-                text: response?.data?.message,
+                text: response?.data?.message || "Your application has been submitted successfully.",
+                showCancelButton: true,
+                confirmButtonText: "🔍 Browse More Jobs",
+                cancelButtonText: "Stay Here",
+                confirmButtonColor: "#4f6ef7",
+                cancelButtonColor: "#6b7280",
             });
             setResumeFile(null);
             if (fileInputRef.current) fileInputRef.current.value = "";
+            if (result.isConfirmed) {
+                navigate("/all-jobs");
+            }
         } catch (error) {
             Swal.fire({
                 icon: "error",

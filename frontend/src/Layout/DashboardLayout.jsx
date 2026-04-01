@@ -12,6 +12,7 @@ const DashboardContext = createContext();
 const DashboardLayout = () => {
     const { handleFetchMe, user } = useUserContext();
     const [showSidebar, setShowSidebar] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     const handleLogout = async () => {
         // Step 1 — Show confirmation popup
@@ -53,7 +54,7 @@ const DashboardLayout = () => {
     };
 
     // passing values
-    const values = { handleLogout, showSidebar, setShowSidebar };
+    const values = { handleLogout, showSidebar, setShowSidebar, sidebarCollapsed, setSidebarCollapsed };
     return (
         <DashboardContext.Provider value={values}>
             <Wrapper>

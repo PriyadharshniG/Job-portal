@@ -84,6 +84,7 @@ const Recruiter = () => {
                                   })
                                 : "—";
                             const sc = STATUS_COLOR[app?.status] || { bg: "#f3f4f6", color: "#374151" };
+                            const rejectedByAdmin = app?.status === "declined" && app?.rejected_by === "admin";
 
                             return (
                                 <tr key={app._id}>
@@ -96,47 +97,61 @@ const Recruiter = () => {
                                     <td>
                                         {app?.resume_url ? (
                                             <a
-                                                href={app.resume_url}
+                                                href={`http://localhost:8000${app.resume_url}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="resume-link"
                                             >
-                                                📄 View
+                                                📄 View PDF
                                             </a>
-                                        ) : <span className="no-resume">None</span>}
+                                        ) : <span className="no-resume">—</span>}
                                     </td>
                                     <td>
-                                        <span className="status-badge" style={{ background: sc.bg, color: sc.color }}>
-                                            {app?.status || "pending"}
-                                        </span>
+                                        <div className="status-col">
+                                            <span className="status-badge" style={{ background: sc.bg, color: sc.color }}>
+                                                {app?.status || "pending"}
+                                            </span>
+                                            {rejectedByAdmin && (
+                                                <span className="admin-rejected">
+                                                    ⚠ Rejected by Admin
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td className="action-row">
-                                        {app?.status !== "accepted" && (
-                                            <button
-                                                className="act-btn admit"
-                                                disabled={statusMutation.isPending}
-                                                onClick={() =>
-                                                    statusMutation.mutate({ application_id: app._id, status: "accepted" })
-                                                }
-                                            >✅ Admit</button>
-                                        )}
-                                        {app?.status !== "interview" && app?.status !== "accepted" && (
-                                            <button
-                                                className="act-btn interview"
-                                                disabled={statusMutation.isPending}
-                                                onClick={() =>
-                                                    statusMutation.mutate({ application_id: app._id, status: "interview" })
-                                                }
-                                            >🎙️ Interview</button>
-                                        )}
-                                        {app?.status !== "declined" && (
-                                            <button
-                                                className="act-btn decline"
-                                                disabled={statusMutation.isPending}
-                                                onClick={() =>
-                                                    statusMutation.mutate({ application_id: app._id, status: "declined" })
-                                                }
-                                            >❌ Decline</button>
+                                        {/* If rejected by admin, show locked message */}
+                                        {rejectedByAdmin ? (
+                                            <span className="admin-lock">🔒 Admin Decision</span>
+                                        ) : (
+                                            <>
+                                                {app?.status !== "accepted" && (
+                                                    <button
+                                                        className="act-btn admit"
+                                                        disabled={statusMutation.isPending}
+                                                        onClick={() =>
+                                                            statusMutation.mutate({ application_id: app._id, status: "accepted" })
+                                                        }
+                                                    >✅ Admit</button>
+                                                )}
+                                                {app?.status !== "interview" && app?.status !== "accepted" && (
+                                                    <button
+                                                        className="act-btn interview"
+                                                        disabled={statusMutation.isPending}
+                                                        onClick={() =>
+                                                            statusMutation.mutate({ application_id: app._id, status: "interview" })
+                                                        }
+                                                    >🎙️ Interview</button>
+                                                )}
+                                                {app?.status !== "declined" && (
+                                                    <button
+                                                        className="act-btn decline"
+                                                        disabled={statusMutation.isPending}
+                                                        onClick={() =>
+                                                            statusMutation.mutate({ application_id: app._id, status: "declined" })
+                                                        }
+                                                    >❌ Decline</button>
+                                                )}
+                                            </>
                                         )}
                                     </td>
                                 </tr>
@@ -192,24 +207,38 @@ const Wrapper = styled.section`
     .position { font-weight: 600; color: #374151; text-transform: capitalize; }
     .date { font-size: 12px; color: #9ca3af; }
 
+    .resume-link {
+        color: #4f6ef7; font-weight: 700; font-size: 12px;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+        padding: 3px 8px; background: #eef1ff; border-radius: 6px; transition: 0.15s;
+    }
+    .resume-link:hover { background: #4f6ef7; color: white; }
+    .no-resume { color: #9ca3af; font-size: 12px; }
+
+    .status-col { display: flex; flex-direction: column; gap: 4px; }
     .status-badge {
         display: inline-block;
         padding: 3px 10px; border-radius: 999px;
         font-size: 11px; font-weight: 700;
         text-transform: uppercase; letter-spacing: 0.4px;
+        width: fit-content;
     }
-
-    .resume-link {
-        color: #d97706; font-weight: 600; font-size: 12px;
-        text-decoration: none;
+    .admin-rejected {
+        font-size: 10px; color: #7c3aed; background: #ede9fe;
+        border-radius: 4px; padding: 2px 6px; font-weight: 700;
+        width: fit-content; white-space: nowrap;
     }
-    .resume-link:hover { text-decoration: underline; }
-    .no-resume { color: #9ca3af; font-size: 12px; }
 
     .action-row {
         display: flex;
         gap: 5px;
         flex-wrap: wrap;
+        align-items: center;
+    }
+    .admin-lock {
+        font-size: 11px; color: #9ca3af; font-style: italic;
+        background: #f3f4f6; padding: 3px 8px; border-radius: 6px;
+        white-space: nowrap;
     }
     .act-btn {
         padding: 4px 10px; border-radius: 6px;

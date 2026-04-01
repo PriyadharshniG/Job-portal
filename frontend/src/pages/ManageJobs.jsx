@@ -118,7 +118,7 @@ const ManageJobs = () => {
                                     <td>{i}</td>
                                     <td>{job?.position}</td>
                                     <td>{job?.company}</td>
-                                    <td>{job?.createdBy?.username}</td>
+                                    <td>{job?.creator_name || "—"}</td>
                                     <td className="action-row">
                                         {/*<Link
                                             to={`/job/${job._id}`}
