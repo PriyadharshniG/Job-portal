@@ -15,14 +15,39 @@
 
 ## ✨ Features
 
-- 🔐 **Foundation ID–based Authentication** — Only VGLUG members can register
-- 👤 **Role-Based Access** — Member, Recruiter, and Admin roles
-- 📋 **Job Listings** — Browse, search, and filter all available jobs
-- 📝 **Job Applications** — Apply with resume upload support
-- 🏢 **Recruiter Panel** — Post jobs, manage applicants, approve/decline candidates
-- 🛡️ **Admin Dashboard** — User management, role assignment, stats overview
+### 🔐 Authentication & Access
+- **Foundation ID–based Authentication** — Only VGLUG members can register
+- **Role-Based Access** — Member (Student), Recruiter, and Admin roles
+- **Auto-seeded Admin** — Admin account is created on first startup automatically
+
+### 👤 Student / Member Portal
+- 📝 **Resume Upload** — Upload PDF/DOCX resumes with AI-powered skill extraction
+- 🧠 **AI Skill Extraction** — Automatically detects 60+ tech skills from resume text
+- 🛠️ **Skills Manager** — Manually add, edit, and remove skills
+- 🐙 **GitHub Integration** — Connect GitHub profile, auto-fetch repos & languages
+- 🏅 **Certifications** — Upload and manage certifications (PDF/image)
+- 🚀 **Projects** — Add project links with tech stack and descriptions
+- 📋 **Student Profile** — Full portfolio-style profile visible to recruiters
+- ✏️ **Edit Profile** — Update bio, education, experience, location, phone
+
+### 🏢 Recruiter Portal
+- 📌 **Post Jobs** — Create detailed job listings with skills, location, salary
+- ✏️ **Edit / Delete Jobs** — Full job lifecycle management
+- 🔍 **Candidate Search** — Search members by skill, name, or Foundation ID
+- 👁️ **View Candidate Profile** — Full read-only student profile view
+- 🤖 **AI Screening Questions** — Generate position-aware interview questions
+  - Supports 15+ skill categories (Python, React, ML, DevOps, etc.)
+  - 3 difficulty levels: Easy, Medium, Hard
+  - Behavioral + Technical question mix
+- 📊 **Manage Applicants** — Approve / Decline / Reject candidates per job
+- 📥 **CSV Export** — Export applications to Excel-compatible CSV
+- 🏷️ **Recruiter Profile** — Update company name, designation, website
+
+### 🛡️ Admin Dashboard
+- 👥 **User Management** — View all users, change roles, delete accounts
 - 📊 **Application Stats** — Track pending, accepted, rejected counts
-- ⚡ **Auto-seeded Admin** — Admin account is created on first startup automatically
+- 🆔 **Foundation ID Management** — Add / list valid Foundation IDs
+- 🗑️ **Application Management** — Delete or reject any application
 
 ---
 
@@ -31,29 +56,56 @@
 ```
 VGLUG-JOB-PORTAL/
 ├── code_quester/
-│   ├── backend/                # FastAPI Python backend
-│   │   ├── routers/            # API route handlers
-│   │   │   ├── auth.py         # Registration & Login
-cdarch
-│   │   │   ├── admin.py        # Admin controls
-│   │   │   ├── applications.py # Job applications
-│   │   │   └── users.py        # User profile
-│   │   ├── main.py             # App entry point + CORS
-│   │   ├── database.py         # MongoDB connection
-│   │   ├── auth_utils.py       # JWT helpers
-│   │   ├── seed.py             # DB seeder
-│   │   ├── requirements.txt    # Python dependencies
-│   │   └── .env                # Environment variables
+│   ├── backend/                  # FastAPI Python backend
+│   │   ├── routers/
+│   │   │   ├── auth.py           # Registration & Login
+│   │   │   ├── admin.py          # Admin controls
+│   │   │   ├── applications.py   # Job applications
+│   │   │   ├── jobs.py           # Job CRUD
+│   │   │   ├── users.py          # User profile (basic)
+│   │   │   ├── student.py        # Student features (resume, skills, GitHub, certs, projects)
+│   │   │   └── recruiter.py      # Recruiter features (candidate search, AI questions, CSV export)
+│   │   ├── main.py               # App entry point + CORS + startup seed
+│   │   ├── database.py           # MongoDB connection
+│   │   ├── auth_utils.py         # JWT helpers + role guards
+│   │   ├── seed.py               # DB seeder
+│   │   ├── requirements.txt      # Python dependencies
+│   │   ├── uploads/
+│   │   │   ├── resumes/          # Uploaded student resumes
+│   │   │   └── certifications/   # Uploaded certification files
+│   │   └── .env                  # Environment variables
 │   │
-│   └── frontend/               # React + Vite frontend
+│   └── frontend/                 # React + Vite frontend
 │       ├── src/
-│       │   ├── pages/          # Page-level components
-│       │   ├── components/     # Reusable UI components
-│       │   ├── context/        # Global state (UserContext, JobContext)
-│       │   ├── Router/         # App routing
-│       │   └── assets/         # CSS, media, wrappers
+│       │   ├── pages/
+│       │   │   ├── Landing.jsx         # Home / landing page
+│       │   │   ├── Login.jsx           # Login page
+│       │   │   ├── Register.jsx        # Registration page
+│       │   │   ├── Profile.jsx         # User profile view
+│       │   │   ├── EditProfile.jsx     # Edit profile page
+│       │   │   ├── StudentProfile.jsx  # Full student portfolio (recruiter view)
+│       │   │   ├── SkillsManager.jsx   # Manage skills
+│       │   │   ├── GitHubConnect.jsx   # Connect GitHub account
+│       │   │   ├── Certifications.jsx  # Manage certifications
+│       │   │   ├── Projects.jsx        # Manage project links
+│       │   │   ├── AddJob.jsx          # Post a new job (recruiter)
+│       │   │   ├── EditJob.jsx         # Edit an existing job
+│       │   │   ├── ManageJobs.jsx      # Job management list
+│       │   │   ├── ManageUsers.jsx     # Admin user management
+│       │   │   ├── CandidateSearch.jsx # Search candidates by skill (recruiter)
+│       │   │   ├── ScreeningQuestions.jsx # AI interview question generator
+│       │   │   ├── Stats.jsx           # Application stats dashboard
+│       │   │   ├── Job.jsx             # Single job detail view
+│       │   │   └── Admin.jsx           # Admin dashboard
+│       │   ├── components/       # Reusable UI components
+│       │   ├── context/          # Global state (UserContext, JobContext)
+│       │   ├── Layout/           # Dashboard layout with collapsible sidebar
+│       │   ├── Router/           # App routing
+│       │   ├── utils/            # Nav link data & helpers
+│       │   └── assets/           # CSS, media, wrappers
+│       ├── vercel.json           # Vercel deployment config
 │       └── package.json
-└── run_backend.bat             # One-click backend launcher (Windows)
+└── run_backend.bat               # One-click backend launcher (Windows)
 ```
 
 ---
@@ -158,12 +210,13 @@ Frontend runs at: **http://localhost:5173**
 
 ### Applications
 
-| Method | Endpoint                       | Access    | Description              |
-|--------|--------------------------------|-----------|--------------------------|
-| POST   | `/api/v1/applications/apply`   | Auth      | Apply for a job          |
-| GET    | `/api/v1/applications/my`      | Auth      | View my applications     |
-| GET    | `/api/v1/applications/job/{id}`| Recruiter | View applicants for job  |
-| PATCH  | `/api/v1/applications/{id}`    | Recruiter | Approve / Decline        |
+| Method | Endpoint                          | Access    | Description              |
+|--------|-----------------------------------|-----------|--------------------------|
+| POST   | `/api/v1/applications/apply`      | Auth      | Apply for a job          |
+| GET    | `/api/v1/applications/my`         | Auth      | View my applications     |
+| GET    | `/api/v1/applications/job/{id}`   | Recruiter | View applicants for job  |
+| PATCH  | `/api/v1/applications/{id}`       | Recruiter | Approve / Decline        |
+| DELETE | `/api/v1/applications/{id}`       | Admin     | Delete an application    |
 
 ### Admin
 
@@ -176,36 +229,92 @@ Frontend runs at: **http://localhost:5173**
 | GET    | `/api/v1/admin/foundation-ids`   | Admin  | List all Foundation IDs  |
 | POST   | `/api/v1/admin/foundation-id`    | Admin  | Add a new Foundation ID  |
 
+### Student
+
+| Method | Endpoint                                  | Access | Description                        |
+|--------|-------------------------------------------|--------|------------------------------------|
+| POST   | `/api/v1/student/resume/upload`           | Auth   | Upload PDF/DOCX resume             |
+| GET    | `/api/v1/student/resume/file/{filename}`  | Auth   | Download/view resume file          |
+| PUT    | `/api/v1/student/skills`                  | Auth   | Replace entire skills list         |
+| POST   | `/api/v1/student/skills/add`              | Auth   | Add a single skill                 |
+| DELETE | `/api/v1/student/skills/{skill_name}`     | Auth   | Remove a skill                     |
+| POST   | `/api/v1/student/github/connect`          | Auth   | Connect GitHub & fetch repos       |
+| GET    | `/api/v1/student/github/repos`            | Auth   | Get cached GitHub repos            |
+| DELETE | `/api/v1/student/github/disconnect`       | Auth   | Disconnect GitHub                  |
+| POST   | `/api/v1/student/certifications/upload`   | Auth   | Upload certification file          |
+| GET    | `/api/v1/student/certifications/file/{f}` | Auth   | Serve certification file           |
+| DELETE | `/api/v1/student/certifications/{id}`     | Auth   | Remove a certification             |
+| POST   | `/api/v1/student/projects/add`            | Auth   | Add a project link                 |
+| DELETE | `/api/v1/student/projects/{id}`           | Auth   | Remove a project                   |
+| GET    | `/api/v1/student/profile`                 | Auth   | Get full student profile           |
+| PUT    | `/api/v1/student/profile/update`          | Auth   | Update student profile fields      |
+
+### Recruiter
+
+| Method | Endpoint                              | Access    | Description                          |
+|--------|---------------------------------------|-----------|--------------------------------------|
+| GET    | `/api/v1/recruiter/candidates/search` | Recruiter | Search candidates by skill/name/ID   |
+| GET    | `/api/v1/recruiter/candidates/{id}`   | Recruiter | Get full candidate profile           |
+| POST   | `/api/v1/recruiter/screening-questions` | Recruiter | Generate AI interview questions    |
+| GET    | `/api/v1/recruiter/applications/export`  | Recruiter | Export applications as CSV        |
+| PUT    | `/api/v1/recruiter/profile/update`    | Recruiter | Update recruiter & company profile   |
+
 ---
 
 ## 🔐 Role-Based Access Control
 
-| Action               | Admin | Recruiter | Member |
-|----------------------|:-----:|:---------:|:------:|
-| Register / Login     | ✅    | ✅        | ✅     |
-| Browse Jobs          | ✅    | ✅        | ✅     |
-| Apply for Job        | ✅    | ✅        | ✅     |
-| Post a Job           | ✅    | ✅        | ❌     |
-| Edit / Delete Job    | ✅    | ✅ (own)  | ❌     |
-| Manage Applicants    | ✅    | ✅ (own)  | ❌     |
-| View All Users       | ✅    | ❌        | ❌     |
-| Change User Roles    | ✅    | ❌        | ❌     |
-| Delete Users         | ✅    | ❌        | ❌     |
-| Add Foundation IDs   | ✅    | ❌        | ❌     |
-| View Dashboard Stats | ✅    | ❌        | ❌     |
+| Action                        | Admin | Recruiter | Member |
+|-------------------------------|:-----:|:---------:|:------:|
+| Register / Login              | ✅    | ✅        | ✅     |
+| Browse Jobs                   | ✅    | ✅        | ✅     |
+| Apply for Job                 | ✅    | ✅        | ✅     |
+| Upload Resume + AI Skills     | ✅    | ❌        | ✅     |
+| Manage Skills                 | ✅    | ❌        | ✅     |
+| Connect GitHub                | ✅    | ❌        | ✅     |
+| Add Certifications            | ✅    | ❌        | ✅     |
+| Add Projects                  | ✅    | ❌        | ✅     |
+| Post a Job                    | ✅    | ✅        | ❌     |
+| Edit / Delete Job             | ✅    | ✅ (own)  | ❌     |
+| Manage Applicants             | ✅    | ✅ (own)  | ❌     |
+| Search Candidates             | ✅    | ✅        | ❌     |
+| Generate AI Questions         | ✅    | ✅        | ❌     |
+| Export Applications CSV       | ✅    | ✅        | ❌     |
+| Update Recruiter Profile      | ✅    | ✅        | ❌     |
+| View All Users                | ✅    | ❌        | ❌     |
+| Change User Roles             | ✅    | ❌        | ❌     |
+| Delete Users                  | ✅    | ❌        | ❌     |
+| Add Foundation IDs            | ✅    | ❌        | ❌     |
+| View Dashboard Stats          | ✅    | ❌        | ❌     |
 
 ---
 
 ## 📦 Tech Stack
 
-| Layer       | Technology                                      |
-|-------------|-------------------------------------------------|
-| **Frontend**| React 18 + Vite + Styled Components + TanStack Query |
-| **Backend** | Python 3 + FastAPI + Uvicorn                    |
-| **Database**| MongoDB (Atlas or Local) via PyMongo            |
-| **Auth**    | JWT (python-jose) + bcrypt password hashing     |
-| **State**   | React Context API + TanStack Query              |
-| **Styling** | Vanilla CSS + CSS Variables + Inter & Poppins   |
+| Layer        | Technology                                              |
+|--------------|---------------------------------------------------------|
+| **Frontend** | React 18 + Vite + Styled Components + TanStack Query    |
+| **Backend**  | Python 3 + FastAPI + Uvicorn                            |
+| **Database** | MongoDB (Atlas or Local) via PyMongo                    |
+| **Auth**     | JWT (python-jose) + bcrypt password hashing             |
+| **State**    | React Context API + TanStack Query                      |
+| **Styling**  | Vanilla CSS + CSS Variables + Inter & Poppins           |
+| **File I/O** | pypdf + python-docx (resume parsing), httpx (GitHub API)|
+
+---
+
+## 🤖 AI Features
+
+### Resume Skill Extraction
+Upload a PDF or DOCX resume — the backend extracts text and detects **60+ tech skills** automatically using keyword matching with word-boundary regex (e.g., won't match "c" inside "science").
+
+### AI Screening Question Generator
+Generates tailored interview questions based on:
+- **Job position title** → infers relevant skill categories
+- **Candidate skills** → picks skill-specific technical questions  
+- **Difficulty level** → Easy / Medium / Hard question pools
+- **Behavioral questions** → always included for soft-skill assessment
+
+Supports 15+ skill banks: Python, JavaScript, React, Node, MongoDB, MySQL, Java, Machine Learning, Docker, AWS, Django, FastAPI, Git, Linux, TypeScript, and more.
 
 ---
 

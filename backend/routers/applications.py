@@ -19,7 +19,7 @@ class ApplicationModel(BaseModel):
 
 class StatusModel(BaseModel):
     application_id: str
-    status: str  # pending | interview | accepted | declined
+    status: str  # pending | interview | shortlisted | accepted | declined
 
 # ── Upload Resume (PDF) ───────────────────────────────────
 @router.post("/upload-resume")
@@ -113,7 +113,7 @@ def update_status(data: StatusModel, request: Request):
     user = get_current_user(request)
     if user["role"] not in ["admin", "recruiter"]:
         raise HTTPException(status_code=403, detail="Access denied.")
-    if data.status not in ["pending", "interview", "accepted", "declined"]:
+    if data.status not in ["pending", "interview", "shortlisted", "accepted", "declined"]:
         raise HTTPException(status_code=400, detail="Invalid status value.")
     db = get_db()
     update_fields = {"status": data.status}

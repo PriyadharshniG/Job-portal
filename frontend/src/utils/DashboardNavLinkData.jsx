@@ -2,7 +2,7 @@ import React from "react";
 
 import { IoIosStats } from "react-icons/io";
 import { RiMenuAddFill } from "react-icons/ri";
-import { FiUser } from "react-icons/fi";
+import { FiUser, FiGithub, FiAward, FiFolder, FiStar, FiSearch, FiZap } from "react-icons/fi";
 import { FaUserShield } from "react-icons/fa";
 import { MdManageAccounts } from "react-icons/md";
 import { FaBriefcase } from "react-icons/fa";
@@ -52,6 +52,16 @@ const RecruiterLinks = [
         path: "my-jobs",
         icon: <FaBriefcase />,
     },
+    {
+        text: "Search Candidates",
+        path: "candidate-search",
+        icon: <FiSearch />,
+    },
+    {
+        text: "Screening Q's",
+        path: "screening-questions",
+        icon: <FiZap />,
+    },
 ];
 
 const UserLinks = [
@@ -59,6 +69,26 @@ const UserLinks = [
         text: "profile",
         path: ".",
         icon: <FiUser />,
+    },
+    {
+        text: "My Skills",
+        path: "skills",
+        icon: <FiStar />,
+    },
+    {
+        text: "GitHub",
+        path: "github",
+        icon: <FiGithub />,
+    },
+    {
+        text: "Certifications",
+        path: "certifications",
+        icon: <FiAward />,
+    },
+    {
+        text: "Projects",
+        path: "projects",
+        icon: <FiFolder />,
     },
     {
         text: "My Applications",

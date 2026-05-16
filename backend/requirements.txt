@@ -7,3 +7,6 @@ bcrypt==3.2.2
 python-dotenv
 python-multipart
 pymongo
+pypdf
+python-docx
+httpx

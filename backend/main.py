@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import auth, users, jobs, admin, applications
+from routers import auth, users, jobs, admin, applications, student, recruiter
 from database import connect_db, get_db
 from passlib.context import CryptContext
 from datetime import datetime
@@ -69,6 +69,8 @@ app.include_router(users.router,        prefix="/api/v1/users",        tags=["Us
 app.include_router(jobs.router,         prefix="/api/v1/jobs",         tags=["Jobs"])
 app.include_router(admin.router,        prefix="/api/v1/admin",        tags=["Admin"])
 app.include_router(applications.router, prefix="/api/v1/applications", tags=["Applications"])
+app.include_router(student.router,      prefix="/api/v1/student",       tags=["Student"])
+app.include_router(recruiter.router,    prefix="/api/v1/recruiter",     tags=["Recruiter"])
 
 @app.get("/")
 def root():

@@ -43,44 +43,26 @@ const EditProfile = () => {
     } = useForm();
 
     const onSubmit = async (data) => {
-        const { username, location, resume, gender } = data;
-        const updateUser = { email: user?.email };
+        const updateUser = {};
+        if (data.username)   updateUser.username   = data.username;
+        if (data.location)   updateUser.location   = data.location;
+        if (data.bio)        updateUser.bio        = data.bio;
+        if (data.education)  updateUser.education  = data.education;
+        if (data.experience) updateUser.experience = data.experience;
+        if (data.phone)      updateUser.phone      = data.phone;
         try {
-            if (username) {
-                updateUser.username = username;
-            }
-            if (location) {
-                updateUser.location = location;
-            }
-            if (resume) {
-                updateUser.resume = resume;
-            }
-            if (gender) {
-                updateUser.gender = gender;
-            }
-
-            const response = await axios.patch(
-                `http://localhost:8000/api/v1/users`,
+            await axios.put(
+                `http://localhost:8000/api/v1/student/profile/update`,
                 updateUser,
-                {
-                    withCredentials: true,
-                }
+                { withCredentials: true }
             );
             reset();
             handleFetchMe();
-            Swal.fire({
-                icon: "success",
-                title: "Done",
-                text: "Profile Updated",
-            });
+            Swal.fire({ icon: "success", title: "Done", text: "Profile Updated" });
             navigate("/dashboard");
         } catch (error) {
             console.log(error);
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: error?.message,
-            });
+            Swal.fire({ icon: "error", title: "Oops...", text: error?.response?.data?.detail || error?.message });
         }
     };
 
@@ -197,65 +179,69 @@ const EditProfile = () => {
                                 )}
                             </div>
 
-                            {/* Resume */}
+                            {/* Bio */}
                             <div className="row">
-                                <label htmlFor="resume">Resume Link</label>
-                                <input
-                                    type="text"
-                                    id="resume"
-                                    name="resume"
-                                    placeholder="google drive link"
-                                    defaultValue={user?.resume}
-                                    {...register("resume", {
-                                        required: {
-                                            value: true,
-                                            message: "Job Location is required",
-                                        },
-                                        maxLength: {
-                                            value: 500,
-                                            message: "Enter valid link",
-                                        },
-                                        minLength: {
-                                            value: 3,
-                                            message: "Too short (max 3char)",
-                                        },
+                                <label htmlFor="bio">Bio</label>
+                                <textarea
+                                    id="bio"
+                                    name="bio"
+                                    placeholder="Tell us about yourself"
+                                    defaultValue={user?.bio}
+                                    {...register("bio", {
+                                        maxLength: { value: 300, message: "Max 300 characters" },
                                     })}
+                                    style={{ resize: "vertical", minHeight: 70 }}
                                 />
-                                {errors?.resume && (
+                                {errors?.bio && (
                                     <span className="text-[10px] font-semibold text-red-600 mt-1 pl-1 tracking-wider">
-                                        {errors?.resume?.message}
+                                        {errors?.bio?.message}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Gender */}
+                            {/* Education */}
                             <div className="row">
-                                <label htmlFor="gender">Gender</label>
-                                <select
-                                    name="gender"
-                                    id="gender"
-                                    defaultValue={user?.gender}
-                                    {...register("gender", {
-                                        validate: {
-                                            valueType: (value) => {
-                                                return (
-                                                    value !== "none" ||
-                                                    "Select One"
-                                                );
-                                            },
-                                        },
+                                <label htmlFor="education">Education</label>
+                                <input
+                                    type="text"
+                                    id="education"
+                                    name="education"
+                                    placeholder="e.g. B.Tech Computer Science"
+                                    defaultValue={user?.education}
+                                    {...register("education", {
+                                        maxLength: { value: 200, message: "Too long" },
                                     })}
-                                >
-                                    <option value="none">Select Gender</option>
-                                    <option value="male">male</option>
-                                    <option value="female">female</option>
-                                    <option value="others">others</option>
-                                </select>
-                                {errors?.gender && (
-                                    <span className="text-[10px] font-semibold text-red-600 mt-1 pl-1 tracking-wider">
-                                        {errors?.gender?.message}
-                                    </span>
-                                )}
+                                />
+                            </div>
+
+                            {/* Experience */}
+                            <div className="row">
+                                <label htmlFor="experience">Experience</label>
+                                <input
+                                    type="text"
+                                    id="experience"
+                                    name="experience"
+                                    placeholder="e.g. 2 years, Fresher"
+                                    defaultValue={user?.experience}
+                                    {...register("experience", {
+                                        maxLength: { value: 100, message: "Too long" },
+                                    })}
+                                />
+                            </div>
+
+                            {/* Phone */}
+                            <div className="row">
+                                <label htmlFor="phone">Phone</label>
+                                <input
+                                    type="text"
+                                    id="phone"
+                                    name="phone"
+                                    placeholder="+91 9876543210"
+                                    defaultValue={user?.phone}
+                                    {...register("phone", {
+                                        maxLength: { value: 20, message: "Too long" },
+                                    })}
+                                />
                             </div>
                         </div>
 

@@ -8,9 +8,11 @@ import styled from "styled-components";
 const API = "http://localhost:8000/api/v1";
 
 const Register = () => {
-    const { register, handleSubmit, reset, formState: { errors } } = useForm();
+    const { register, handleSubmit, watch, reset, formState: { errors } } = useForm();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    const selectedRole = watch("role", "user");
 
     const onSubmit = async (data) => {
         if (data.password !== data.confirmPassword) {
@@ -19,15 +21,19 @@ const Register = () => {
         }
         setIsLoading(true);
         try {
-            const res = await axios.post(`${API}/auth/register`, {
+            const payload = {
                 username: data.username,
                 foundation_id: data.foundation_id,
                 email: data.email,
                 password: data.password,
                 role: data.role,
-            }, { withCredentials: true });
-
-            console.log("Register response", res.data);
+            };
+            if (data.role === "recruiter") {
+                payload.company_name    = data.company_name    || "";
+                payload.company_website = data.company_website || "";
+                payload.designation     = data.designation     || "";
+            }
+            const res = await axios.post(`${API}/auth/register`, payload, { withCredentials: true });
 
             if (res.data?.status !== false) {
                 Swal.fire({ icon: "success", title: "Registered!", text: res.data.message || "Account created." });
@@ -37,10 +43,8 @@ const Register = () => {
                 Swal.fire({ icon: "error", title: "Oops!", text: res.data.message || "Registration failed." });
             }
         } catch (err) {
-            console.error("Register error", err);
             Swal.fire({
-                icon: "error",
-                title: "Oops!",
+                icon: "error", title: "Oops!",
                 text: err?.response?.data?.detail || err?.response?.data?.message || "Registration failed.",
             });
         }
@@ -58,6 +62,15 @@ const Register = () => {
                 <p className="sub">Register to access the VGLUG Job Portal</p>
 
                 <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" noValidate>
+                    {/* Role — placed first so company fields appear dynamically */}
+                    <div className="field">
+                        <label>Register As</label>
+                        <select {...register("role", { required: true })}>
+                            <option value="user">👨‍💻 Member (Job Seeker)</option>
+                            <option value="recruiter">🧑‍💼 Recruiter / Project Lead</option>
+                        </select>
+                    </div>
+
                     {/* Username */}
                     <div className="field">
                         <label>Full Name</label>
@@ -69,7 +82,7 @@ const Register = () => {
                     {/* Foundation ID */}
                     <div className="field">
                         <label>Foundation ID <span className="badge">🪪 Your ID</span></label>
-                        <input type="text" placeholder="e.g. VGLUG-001 or your own ID" autoComplete="off"
+                        <input type="text" placeholder="e.g. VGLUG-001" autoComplete="off"
                             {...register("foundation_id", { required: "Foundation ID is required" })} />
                         {errors.foundation_id && <span className="err">{errors.foundation_id.message}</span>}
                     </div>
@@ -82,14 +95,28 @@ const Register = () => {
                         {errors.email && <span className="err">{errors.email.message}</span>}
                     </div>
 
-                    {/* Role */}
-                    <div className="field">
-                        <label>Register As</label>
-                        <select {...register("role", { required: true })}>
-                            <option value="user">👨‍💻 Member (Job Seeker)</option>
-                            <option value="recruiter">🧑‍💼 Recruiter / Project Lead</option>
-                        </select>
-                    </div>
+                    {/* ── Recruiter-only company fields ── */}
+                    {selectedRole === "recruiter" && (
+                        <div className="recruiter-section">
+                            <div className="section-label">🏢 Company Details</div>
+                            <div className="field">
+                                <label>Company Name <span className="badge required-badge">Required</span></label>
+                                <input type="text" placeholder="e.g. VGLUG Foundation, Zoho Corp"
+                                    {...register("company_name", { required: "Company name is required for recruiters" })} />
+                                {errors.company_name && <span className="err">{errors.company_name.message}</span>}
+                            </div>
+                            <div className="field">
+                                <label>Your Designation</label>
+                                <input type="text" placeholder="e.g. HR Manager, Technical Lead, CTO"
+                                    {...register("designation")} />
+                            </div>
+                            <div className="field">
+                                <label>Company Website <span className="badge">Optional</span></label>
+                                <input type="url" placeholder="https://yourcompany.com"
+                                    {...register("company_website")} />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Password */}
                     <div className="field">
@@ -137,29 +164,49 @@ const Wrapper = styled.div`
         border: 1px solid rgba(255,255,255,0.1);
         border-radius: 20px;
         padding: 48px 44px;
-        width: 100%; max-width: 420px;
+        width: 100%; max-width: 460px;
         backdrop-filter: blur(12px);
     }
     .logo-wrap { display:flex; align-items:center; gap:10px; justify-content:center; margin-bottom:20px; }
-    .logo-icon { font-size:32px; }
     .logo-text { font-size:18px; font-weight:800; color:#f59e0b; }
     h1 { text-align:center; font-size:22px; font-weight:800; color:#fff; margin-bottom:4px; }
     .sub { text-align:center; font-size:12px; color:rgba(255,255,255,0.4); margin-bottom:28px; }
 
-    .field { display:flex; flex-direction:column; gap:5px; margin-bottom:18px; }
-    .field label { font-size:12px; font-weight:600; color:rgba(255,255,255,0.65); display:flex; align-items:center; gap:8px; }
+    .field { display:flex; flex-direction:column; gap:5px; margin-bottom:16px; }
+    .field label { font-size:12px; font-weight:600; color:rgba(255,255,255,0.65); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .badge { background:rgba(245,158,11,0.2); color:#fcd34d; border:1px solid rgba(245,158,11,0.35); border-radius:999px; padding:1px 8px; font-size:10px; }
+    .required-badge { background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.35); border-radius:999px; padding:1px 8px; font-size:10px; }
     .field input, .field select {
         background: rgba(255,255,255,0.06);
         border: 1px solid rgba(255,255,255,0.12);
         border-radius: 10px; padding: 11px 14px;
-        color: #fff; font-size: 13px;
-        transition: 0.2s;
+        color: #fff; font-size: 13px; transition: 0.2s;
     }
     .field input::placeholder { color: rgba(255,255,255,0.3); }
     .field input:focus, .field select:focus { outline:none; border-color: rgba(245,158,11,0.6); background: rgba(255,255,255,0.08); }
     .field select option { background: #1e293b; color: #fff; }
     .err { font-size:11px; color:#f87171; }
+
+    /* Recruiter section */
+    .recruiter-section {
+        background: rgba(245,158,11,0.06);
+        border: 1px solid rgba(245,158,11,0.2);
+        border-radius: 14px;
+        padding: 16px;
+        margin-bottom: 16px;
+        animation: slideDown 0.25s ease;
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .section-label {
+        font-size: 12px; font-weight: 700;
+        color: #f59e0b; margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    .recruiter-section .field { margin-bottom: 12px; }
+    .recruiter-section .field:last-child { margin-bottom: 0; }
 
     .btn {
         width:100%; padding:13px; border:none; border-radius:12px;

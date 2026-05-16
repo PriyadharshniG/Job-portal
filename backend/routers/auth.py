@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response, Request
 from pydantic import BaseModel
+from typing import Optional
 from database import get_db
 from auth_utils import create_token, get_current_user
 from passlib.context import CryptContext
@@ -16,6 +17,9 @@ class RegisterModel(BaseModel):
     email: str
     password: str
     role: str = "user"  # user | recruiter
+    company_name: Optional[str] = ""
+    company_website: Optional[str] = ""
+    designation: Optional[str] = ""
 
 class LoginModel(BaseModel):
     foundation_id: str
@@ -69,6 +73,9 @@ def register(data: RegisterModel, response: Response):
         "location": "",
         "resume": "",
         "bio": "",
+        "company_name": (data.company_name or "").strip(),
+        "company_website": (data.company_website or "").strip(),
+        "designation": (data.designation or "").strip(),
         "created_at": datetime.utcnow().isoformat(),
     }
     db.vgulg_users.insert_one(new_user)
