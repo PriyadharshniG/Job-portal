@@ -122,11 +122,17 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
     extracted_skills = extract_skills_from_text(text)
     resume_url = f"/api/v1/student/resume/file/{safe_name}"
 
-    # Persist resume_url on user document
+    # Persist resume_url and merge extracted skills into user document
     db = get_db()
+    update_data = {
+        "$set": {"resume": resume_url, "resume_filename": file.filename}
+    }
+    if extracted_skills:
+        update_data["$addToSet"] = {"skills": {"$each": extracted_skills}}
+
     db.vgulg_users.update_one(
         {"_id": user["_id"]},
-        {"$set": {"resume": resume_url, "resume_filename": file.filename}}
+        update_data
     )
 
     return {
