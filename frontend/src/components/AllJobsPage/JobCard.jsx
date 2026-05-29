@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import styled from "styled-components";
 
 import { TfiLocationPin } from "react-icons/tfi";
 import { BsFillBriefcaseFill } from "react-icons/bs";
 import { TbTargetArrow } from "react-icons/tb";
 import { FaRegCalendarAlt } from "react-icons/fa";
-import { FiLock } from "react-icons/fi";
+import { FiLock, FiFileText } from "react-icons/fi";
 
 import advancedFormat from "dayjs/plugin/advancedFormat";
 import dayjs from "dayjs";
@@ -13,44 +13,14 @@ dayjs.extend(advancedFormat);
 
 import { useUserContext } from "../../context/UserContext";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import Swal from "sweetalert2";
 
 const JobCard = ({ job }) => {
     const date = dayjs(job?.job_deadline).format("MMM Do, YYYY");
     const { user } = useUserContext();
     const navigate = useNavigate();
-    const [applying, setApplying] = useState(false);
 
     // User is considered logged in if they have an email field
     const isLoggedIn = user && user.email;
-
-    const handleApply = async (id) => {
-        if (!isLoggedIn) {
-            navigate("/login", { state: { from: "/all-jobs" } });
-            return;
-        }
-        setApplying(true);
-        try {
-            const response = await axios.post(
-                `http://localhost:8000/api/v1/applications/apply`,
-                { job_id: id },
-                { withCredentials: true }
-            );
-            Swal.fire({
-                icon: "success",
-                title: "Applied!",
-                text: response?.data?.message,
-            });
-        } catch (error) {
-            Swal.fire({
-                icon: "error",
-                title: "Oops...",
-                text: error?.response?.data?.detail || "Something went wrong.",
-            });
-        }
-        setApplying(false);
-    };
 
     return (
         <Wrapper>
@@ -89,20 +59,20 @@ const JobCard = ({ job }) => {
                         Details
                     </Link>
 
-                    {/* Logged in → show Apply; Guest → show Login to Apply */}
+                    {/* Apply → always navigate to detail page for resume upload */}
                     {isLoggedIn ? (
-                        <button
+                        <Link
+                            to={`/job/${job._id}`}
                             className="apply-btn"
-                            onClick={() => handleApply(job._id)}
-                            disabled={applying}
+                            title="Upload resume & apply from the detail page"
                         >
-                            {applying ? "Applying..." : "Apply"}
-                        </button>
+                            <FiFileText className="btn-icon" /> Apply
+                        </Link>
                     ) : (
                         <button
                             className="login-apply-btn"
                             onClick={() =>
-                                navigate("/login", { state: { from: "/all-jobs" } })
+                                navigate("/login", { state: { from: `/job/${job._id}` } })
                             }
                             title="Login or Register to apply for this job"
                         >
@@ -232,6 +202,9 @@ const Wrapper = styled.div`
         background-color: var(--color-accent);
     }
     .end-row .apply-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
         padding: 5px 18px;
         text-transform: capitalize;
         background-color: var(--color-accent);
@@ -244,12 +217,10 @@ const Wrapper = styled.div`
         border: none;
         outline: none;
         cursor: pointer;
+        text-decoration: none;
     }
     .end-row .apply-btn:hover { background-color: var(--color-black); }
-    .end-row .apply-btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
+    .btn-icon { font-size: 13px; }
 
     /* Guest "Login to Apply" button */
     .end-row .login-apply-btn {

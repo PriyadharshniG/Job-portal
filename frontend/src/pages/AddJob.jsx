@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState } from "react";
 import styled from "styled-components";
-import { CiSquarePlus } from "react-icons/ci";
 
 import { Job_Status, Job_Type } from "../utils/JobData";
 
@@ -88,7 +87,6 @@ const AddJob = () => {
             <div className="">
                 <div className="title-row">
                     Create Job
-                    <CiSquarePlus className="ml-1 text-xl md:text-2xl" />
                 </div>
                 <div className="content-row">
                     <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>

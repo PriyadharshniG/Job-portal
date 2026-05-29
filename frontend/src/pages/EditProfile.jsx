@@ -1,5 +1,4 @@
 import React from "react";
-import { CiSquarePlus } from "react-icons/ci";
 import styled from "styled-components";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
 
@@ -80,7 +79,6 @@ const EditProfile = () => {
             <div className="">
                 <div className="title-row">
                     Update Profile
-                    <CiSquarePlus className="ml-1 text-xl md:text-2xl" />
                 </div>
                 <div className="content-row">
                     <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>

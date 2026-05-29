@@ -1,5 +1,4 @@
 import React from "react";
-import { CiSquarePlus } from "react-icons/ci";
 import styled from "styled-components";
 
 import { useUserContext } from "../context/UserContext";
@@ -14,7 +13,6 @@ const MyJobs = () => {
             <div className="title-row">
                 {user?.role === "recruiter" && "Manage Applications"}
                 {user?.role === "user" && "My Applications"}
-                <CiSquarePlus className="ml-1 text-xl md:text-2xl" />
             </div>
             {user?.role === "user" && <Applicant />}
             {user?.role === "recruiter" && <Recruiter />}

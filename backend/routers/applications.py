@@ -4,22 +4,57 @@ from pydantic import BaseModel
 from database import get_db
 from auth_utils import get_current_user, require_admin
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from bson import ObjectId
-import os, shutil
+import os, shutil, re
 
 router = APIRouter()
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "uploads", "resumes")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-class ApplicationModel(BaseModel):
-    job_id: str
-    resume_url: Optional[str] = ""
+# ── Skill keywords (same as student.py) ──────────────────
+SKILL_KEYWORDS = [
+    "python","javascript","typescript","java","c++","c#","c","go","rust","swift","kotlin",
+    "ruby","php","scala","r","matlab","dart","perl","haskell","elixir","clojure",
+    "html","css","react","reactjs","vue","vuejs","angular","svelte","nextjs","nuxtjs",
+    "node","nodejs","express","fastapi","django","flask","laravel","rails","spring",
+    "tailwind","bootstrap","jquery","graphql","rest","restapi","websocket",
+    "machine learning","deep learning","nlp","natural language processing",
+    "tensorflow","pytorch","keras","scikit-learn","sklearn","pandas","numpy","matplotlib",
+    "seaborn","opencv","computer vision","data science","data analysis","hadoop","spark",
+    "mongodb","mysql","postgresql","postgres","sqlite","redis","firebase","dynamodb",
+    "oracle","cassandra","elasticsearch","neo4j",
+    "docker","kubernetes","aws","azure","gcp","google cloud","heroku","vercel","netlify",
+    "linux","bash","shell","git","github","gitlab","jenkins","terraform","ansible","ci/cd",
+    "android","ios","flutter","react native","xamarin",
+    "figma","photoshop","illustrator","unity","unreal","blender",
+    "api","microservices","agile","scrum","devops","blockchain","solidity",
+    "excel","powerbi","tableau","seo","selenium","playwright","jest","pytest",
+]
 
-class StatusModel(BaseModel):
-    application_id: str
-    status: str  # pending | interview | shortlisted | accepted | declined
+def extract_skills_from_text(text: str) -> List[str]:
+    """AI-like skill extraction: keyword matching with word-boundary check."""
+    text_lower = text.lower()
+    found = []
+    for skill in SKILL_KEYWORDS:
+        pattern = r"(?<![a-z0-9])" + re.escape(skill) + r"(?![a-z0-9])"
+        if re.search(pattern, text_lower):
+            found.append(skill.title() if " " not in skill else skill.title())
+    return list(dict.fromkeys(found))  # deduplicate, preserve order
+
+def extract_text_from_pdf(file_path: str) -> str:
+    """Extract text from a PDF file using pypdf."""
+    try:
+        import pypdf
+        text = ""
+        with open(file_path, "rb") as f:
+            reader = pypdf.PdfReader(f)
+            for page in reader.pages:
+                text += (page.extract_text() or "")
+        return text
+    except Exception:
+        return ""
 
 # ── Upload Resume (PDF) ───────────────────────────────────
 @router.post("/upload-resume")
@@ -31,7 +66,20 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
     file_path = os.path.join(UPLOAD_DIR, safe_name)
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
-    return {"status": True, "resume_url": f"/api/v1/applications/resume/{safe_name}"}
+
+    # ── AI Skill extraction from resume ──────────────────
+    resume_text = extract_text_from_pdf(file_path)
+    extracted_skills = extract_skills_from_text(resume_text)
+
+    # Save extracted skills to user's resume_skills field (non-destructive)
+    if extracted_skills:
+        db = get_db()
+        db.vgulg_users.update_one(
+            {"_id": user["_id"]},
+            {"$addToSet": {"resume_skills": {"$each": extracted_skills}}}
+        )
+
+    return {"status": True, "resume_url": f"/api/v1/applications/resume/{safe_name}", "extracted_skills": extracted_skills}
 
 # ── Serve Resume File ─────────────────────────────────────
 @router.get("/resume/{filename}")
@@ -40,6 +88,15 @@ def serve_resume(filename: str):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Resume not found.")
     return FileResponse(file_path, media_type="application/pdf", filename=filename)
+
+# ── Pydantic models ───────────────────────────────────────
+class ApplicationModel(BaseModel):
+    job_id: str
+    resume_url: Optional[str] = ""
+
+class StatusModel(BaseModel):
+    application_id: str
+    status: str  # pending | interview | shortlisted | accepted | declined
 
 # ── All Applications (Admin) — must be before /{app_id} ──
 @router.get("/all")

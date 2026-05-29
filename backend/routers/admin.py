@@ -4,8 +4,11 @@ from database import get_db
 from auth_utils import require_admin
 from typing import Optional
 from bson import ObjectId
+from passlib.context import CryptContext
+from datetime import datetime
 
 router = APIRouter()
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class ApprovalModel(BaseModel):
     user_id: str
@@ -18,6 +21,61 @@ class RoleModel(BaseModel):
 class FoundationIDModel(BaseModel):
     foundation_id: str
     member_name: Optional[str] = ""
+
+class CreateRecruiterModel(BaseModel):
+    username: str
+    foundation_id: str
+    email: str
+    password: str
+    company_name: str
+    designation: Optional[str] = ""
+    company_website: Optional[str] = ""
+
+# ── Admin: Create Recruiter Account ──────────────────────
+@router.post("/create-recruiter")
+def create_recruiter(data: CreateRecruiterModel, request: Request):
+    """Admin-only: create a recruiter account directly (no public registration)."""
+    require_admin(request)
+    db = get_db()
+
+    foundation_id = data.foundation_id.strip().upper()
+
+    if db.vgulg_users.find_one({"foundation_id": foundation_id}):
+        raise HTTPException(status_code=400, detail="This Foundation ID is already registered.")
+
+    if db.vgulg_users.find_one({"email": data.email.strip().lower()}):
+        raise HTTPException(status_code=400, detail="Email already in use.")
+
+    if len(data.password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=400, detail="Password too long (max 72 bytes).")
+
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    new_recruiter = {
+        "_id": str(ObjectId()),
+        "username": data.username.strip(),
+        "foundation_id": foundation_id,
+        "email": data.email.strip().lower(),
+        "password": pwd_ctx.hash(data.password),
+        "role": "recruiter",
+        "is_approved": True,
+        "skills": [],
+        "education": "",
+        "experience": "",
+        "location": "",
+        "resume": "",
+        "bio": "",
+        "company_name": data.company_name.strip(),
+        "company_website": (data.company_website or "").strip(),
+        "designation": (data.designation or "").strip(),
+        "created_at": datetime.utcnow().isoformat(),
+    }
+    db.vgulg_users.insert_one(new_recruiter)
+    print(f"✅ Recruiter created by admin: {foundation_id} | {data.company_name}")
+    return {"status": True, "message": f"Recruiter account for '{data.username}' created successfully!"}
+
+
 
 # ── Dashboard Stats ──────────────────────────────────────
 @router.get("/stats")

@@ -8,11 +8,10 @@ import styled from "styled-components";
 const API = "http://localhost:8000/api/v1";
 
 const Register = () => {
-    const { register, handleSubmit, watch, reset, formState: { errors } } = useForm();
+    const { register, handleSubmit, reset, formState: { errors } } = useForm();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    const selectedRole = watch("role", "user");
 
     const onSubmit = async (data) => {
         if (data.password !== data.confirmPassword) {
@@ -26,13 +25,8 @@ const Register = () => {
                 foundation_id: data.foundation_id,
                 email: data.email,
                 password: data.password,
-                role: data.role,
+                role: "user",
             };
-            if (data.role === "recruiter") {
-                payload.company_name    = data.company_name    || "";
-                payload.company_website = data.company_website || "";
-                payload.designation     = data.designation     || "";
-            }
             const res = await axios.post(`${API}/auth/register`, payload, { withCredentials: true });
 
             if (res.data?.status !== false) {
@@ -62,15 +56,6 @@ const Register = () => {
                 <p className="sub">Register to access the VGLUG Job Portal</p>
 
                 <form onSubmit={handleSubmit(onSubmit)} autoComplete="off" noValidate>
-                    {/* Role — placed first so company fields appear dynamically */}
-                    <div className="field">
-                        <label>Register As</label>
-                        <select {...register("role", { required: true })}>
-                            <option value="user">👨‍💻 Member (Job Seeker)</option>
-                            <option value="recruiter">🧑‍💼 Recruiter / Project Lead</option>
-                        </select>
-                    </div>
-
                     {/* Username */}
                     <div className="field">
                         <label>Full Name</label>
@@ -94,29 +79,6 @@ const Register = () => {
                             {...register("email", { required: "Email is required" })} />
                         {errors.email && <span className="err">{errors.email.message}</span>}
                     </div>
-
-                    {/* ── Recruiter-only company fields ── */}
-                    {selectedRole === "recruiter" && (
-                        <div className="recruiter-section">
-                            <div className="section-label">🏢 Company Details</div>
-                            <div className="field">
-                                <label>Company Name <span className="badge required-badge">Required</span></label>
-                                <input type="text" placeholder="e.g. VGLUG Foundation, Zoho Corp"
-                                    {...register("company_name", { required: "Company name is required for recruiters" })} />
-                                {errors.company_name && <span className="err">{errors.company_name.message}</span>}
-                            </div>
-                            <div className="field">
-                                <label>Your Designation</label>
-                                <input type="text" placeholder="e.g. HR Manager, Technical Lead, CTO"
-                                    {...register("designation")} />
-                            </div>
-                            <div className="field">
-                                <label>Company Website <span className="badge">Optional</span></label>
-                                <input type="url" placeholder="https://yourcompany.com"
-                                    {...register("company_website")} />
-                            </div>
-                        </div>
-                    )}
 
                     {/* Password */}
                     <div className="field">

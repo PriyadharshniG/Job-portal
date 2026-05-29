@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import axios from "axios";
 import styled from "styled-components";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
@@ -20,6 +21,10 @@ const Admin = () => {
     const qc = useQueryClient();
     const [activeTab, setActiveTab] = useState("overview");
     const [appFilter, setAppFilter] = useState("all");
+
+    // Create Recruiter form
+    const { register: regR, handleSubmit: hsR, reset: resetR, formState: { errors: errR } } = useForm();
+    const [recLoading, setRecLoading] = useState(false);
 
     // Stats
     const { data: stats, isPending: statsLoading } = useQuery({
@@ -135,7 +140,34 @@ const Admin = () => {
         { label: "Declined",           value: s.declined_apps,      color: "#ef4444", icon: "❌" },
     ];
 
-    const tabs = ["overview", "applications", "users"];
+    const tabs = ["overview", "applications", "users", "create-recruiter"];
+
+    // ── Create Recruiter submit ────────────────────────────
+    const onCreateRecruiter = async (data) => {
+        if (data.password !== data.confirmPassword) {
+            Swal.fire({ icon: "error", title: "Error", text: "Passwords do not match." });
+            return;
+        }
+        setRecLoading(true);
+        try {
+            const res = await axios.post(`${API}/admin/create-recruiter`, {
+                username:        data.username,
+                foundation_id:   data.foundation_id,
+                email:           data.email,
+                password:        data.password,
+                company_name:    data.company_name,
+                designation:     data.designation || "",
+                company_website: data.company_website || "",
+            }, { withCredentials: true });
+            Swal.fire({ icon: "success", title: "✅ Recruiter Created!", text: res.data.message });
+            resetR();
+            qc.invalidateQueries(["admin_stats"]);
+            qc.invalidateQueries(["admin_users"]);
+        } catch (err) {
+            Swal.fire({ icon: "error", title: "Failed", text: err?.response?.data?.detail || "Something went wrong." });
+        }
+        setRecLoading(false);
+    };
 
     return (
         <Wrapper>
@@ -156,7 +188,9 @@ const Admin = () => {
                             ? "📊 Overview"
                             : t === "applications"
                             ? `📋 Applications (${s.total_applications || 0})`
-                            : "👥 All Members"}
+                            : t === "users"
+                            ? "👥 All Members"
+                            : "🧑‍💼 Add Recruiter"}
                     </button>
                 ))}
             </div>
@@ -326,6 +360,93 @@ const Admin = () => {
                     </div>
                 </div>
             )}
+            {/* ── CREATE RECRUITER ── */}
+            {activeTab === "create-recruiter" && (
+                <div className="rec-section">
+                    <div className="rec-header">
+                        <div className="rec-header-icon">🧑‍💼</div>
+                        <div>
+                            <h3>Create Recruiter Account</h3>
+                            <p>Fill in the details below. The recruiter can log in immediately using the existing login page with their Foundation ID and password.</p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={hsR(onCreateRecruiter)} autoComplete="off" noValidate className="rec-form">
+                        <div className="rec-grid">
+                            {/* Full Name */}
+                            <div className="rec-field">
+                                <label>Full Name <span className="req-star">*</span></label>
+                                <input type="text" placeholder="e.g. Arjun Kumar"
+                                    {...regR("username", { required: "Name is required", minLength: { value: 3, message: "Min 3 chars" } })} />
+                                {errR.username && <span className="ferr">{errR.username.message}</span>}
+                            </div>
+
+                            {/* Foundation ID */}
+                            <div className="rec-field">
+                                <label>Foundation ID <span className="req-star">*</span></label>
+                                <input type="text" placeholder="e.g. VGLUG-REC-001"
+                                    {...regR("foundation_id", { required: "Foundation ID is required" })} />
+                                {errR.foundation_id && <span className="ferr">{errR.foundation_id.message}</span>}
+                            </div>
+
+                            {/* Email */}
+                            <div className="rec-field">
+                                <label>Email <span className="req-star">*</span></label>
+                                <input type="email" placeholder="recruiter@company.com"
+                                    {...regR("email", { required: "Email is required" })} />
+                                {errR.email && <span className="ferr">{errR.email.message}</span>}
+                            </div>
+
+                            {/* Company Name */}
+                            <div className="rec-field">
+                                <label>Company Name <span className="req-star">*</span></label>
+                                <input type="text" placeholder="e.g. VGLUG Foundation, Zoho Corp"
+                                    {...regR("company_name", { required: "Company name is required" })} />
+                                {errR.company_name && <span className="ferr">{errR.company_name.message}</span>}
+                            </div>
+
+                            {/* Designation */}
+                            <div className="rec-field">
+                                <label>Designation</label>
+                                <input type="text" placeholder="e.g. HR Manager, Technical Lead"
+                                    {...regR("designation")} />
+                            </div>
+
+                            {/* Company Website */}
+                            <div className="rec-field">
+                                <label>Company Website <span className="opt-tag">Optional</span></label>
+                                <input type="url" placeholder="https://company.com"
+                                    {...regR("company_website")} />
+                            </div>
+
+                            {/* Password */}
+                            <div className="rec-field">
+                                <label>Password <span className="req-star">*</span></label>
+                                <input type="password" placeholder="Min 6 characters"
+                                    {...regR("password", { required: "Password is required", minLength: { value: 6, message: "Min 6 characters" } })} />
+                                {errR.password && <span className="ferr">{errR.password.message}</span>}
+                            </div>
+
+                            {/* Confirm Password */}
+                            <div className="rec-field">
+                                <label>Confirm Password <span className="req-star">*</span></label>
+                                <input type="password" placeholder="Repeat password"
+                                    {...regR("confirmPassword", { required: "Please confirm password" })} />
+                                {errR.confirmPassword && <span className="ferr">{errR.confirmPassword.message}</span>}
+                            </div>
+                        </div>
+
+                        <div className="rec-notice">
+                            ℹ️ The recruiter will use the <strong>Login page</strong> to access their account using their Foundation ID and password.
+                        </div>
+
+                        <button type="submit" className="rec-btn" disabled={recLoading}>
+                            {recLoading ? "Creating Account..." : "🧑‍💼 Create Recruiter Account"}
+                        </button>
+                    </form>
+                </div>
+            )}
+
         </Wrapper>
     );
 };
@@ -459,6 +580,96 @@ const Wrapper = styled.section`
         font-size: 14px; cursor: pointer; transition: 0.15s;
     }
     .del-btn:hover { background: #ef4444; }
+
+    /* ── Create Recruiter Section ──────────────────────── */
+    .rec-section {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 32px;
+        max-width: 860px;
+    }
+    .rec-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 28px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #f0f4ff;
+    }
+    .rec-header-icon {
+        width: 56px; height: 56px;
+        background: linear-gradient(135deg, #4f6ef7, #7b93f9);
+        border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 26px; flex-shrink: 0;
+        box-shadow: 0 4px 14px rgba(79,110,247,0.35);
+    }
+    .rec-header h3 {
+        font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px;
+    }
+    .rec-header p {
+        font-size: 12.5px; color: #6b7280; line-height: 1.5;
+    }
+
+    .rec-form { width: 100%; }
+    .rec-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 640px) { .rec-grid { grid-template-columns: 1fr; } }
+
+    .rec-field {
+        display: flex; flex-direction: column; gap: 5px;
+    }
+    .rec-field label {
+        font-size: 12px; font-weight: 700; color: #374151;
+        display: flex; align-items: center; gap: 6px;
+    }
+    .rec-field input {
+        padding: 10px 14px;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 13px; color: #111;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        outline: none;
+        background: #fafafa;
+    }
+    .rec-field input:focus {
+        border-color: #4f6ef7;
+        box-shadow: 0 0 0 3px rgba(79,110,247,0.12);
+        background: white;
+    }
+    .req-star { color: #ef4444; font-weight: 900; }
+    .opt-tag {
+        font-size: 10px; color: #6b7280; font-weight: 500;
+        background: #f3f4f6; border-radius: 999px; padding: 1px 7px;
+    }
+    .ferr { font-size: 11px; color: #ef4444; font-weight: 600; }
+
+    .rec-notice {
+        background: linear-gradient(135deg, #eef1ff, #f0f9ff);
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 12.5px; color: #3730a3;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    .rec-btn {
+        width: 100%;
+        padding: 14px;
+        border: none; border-radius: 12px;
+        background: linear-gradient(135deg, #4f6ef7, #7b93f9);
+        color: white; font-size: 15px; font-weight: 700;
+        cursor: pointer; transition: all 0.25s ease;
+        box-shadow: 0 4px 16px rgba(79,110,247,0.35);
+        letter-spacing: 0.3px;
+    }
+    .rec-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(79,110,247,0.45); }
+    .rec-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 `;
 
 export default Admin;

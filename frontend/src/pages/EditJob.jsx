@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
 import { getSingleHandler, updateHandler } from "../utils/FetchHandlers";
-import { CiSquarePlus } from "react-icons/ci";
 
 import { Job_Status, Job_Type } from "../utils/JobData";
 
@@ -117,7 +116,6 @@ const EditJob = () => {
             <div className="">
                 <div className="title-row">
                     Update Job
-                    <CiSquarePlus className="ml-1 text-xl md:text-2xl" />
                 </div>
                 <div className="content-row">
                     <form autoComplete="off" onSubmit={handleSubmit(onSubmit)}>

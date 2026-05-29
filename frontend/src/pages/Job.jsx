@@ -56,25 +56,34 @@ const Job = () => {
             navigate("/login", { state: { from: `/job/${id}` } });
             return;
         }
+
+        // ── Resume is MANDATORY ──────────────────────────────
+        if (!resumeFile) {
+            Swal.fire({
+                icon: "warning",
+                title: "Resume Required",
+                text: "Please attach your resume (PDF) before applying.",
+                confirmButtonColor: "#f59e0b",
+            });
+            return;
+        }
+
         setApplying(true);
         try {
-            // Step 1: Upload resume PDF to server (if selected)
-            let resume_url = "";
-            if (resumeFile) {
-                const formData = new FormData();
-                formData.append("file", resumeFile);
-                const uploadRes = await axios.post(
-                    `http://localhost:8000/api/v1/applications/upload-resume`,
-                    formData,
-                    {
-                        withCredentials: true,
-                        headers: { "Content-Type": "multipart/form-data" },
-                    }
-                );
-                resume_url = uploadRes.data.resume_url;
-            }
+            // Step 1: Upload resume PDF → backend extracts skills automatically
+            const formData = new FormData();
+            formData.append("file", resumeFile);
+            const uploadRes = await axios.post(
+                `http://localhost:8000/api/v1/applications/upload-resume`,
+                formData,
+                {
+                    withCredentials: true,
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
+            const resume_url = uploadRes.data.resume_url;
 
-            // Step 2: Submit application with server resume URL
+            // Step 2: Submit application with the uploaded resume URL
             const response = await axios.post(
                 `http://localhost:8000/api/v1/applications/apply`,
                 { job_id: id, resume_url },
@@ -216,9 +225,13 @@ const Job = () => {
                                         className="apply-btn"
                                         onClick={handleApply}
                                         disabled={applying}
+                                        title={!resumeFile ? "Please attach your resume first" : "Submit your application"}
                                     >
                                         {applying ? "Submitting..." : "Apply Now"}
                                     </button>
+                                    {!resumeFile && (
+                                        <p className="resume-hint">⚠️ Resume is required to apply</p>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="guest-apply">
@@ -392,6 +405,16 @@ const Wrapper = styled.section`
     }
     .apply-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(245,158,11,0.45); }
     .apply-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .resume-hint {
+        font-size: 12px;
+        color: #b45309;
+        font-weight: 600;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
 
 
     .guest-apply .guest-msg {

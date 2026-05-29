@@ -30,15 +30,21 @@ def search_candidates(
     page: int = 1,
     limit: int = 20,
 ):
-    """Search for candidates (role=user) by skills, name, or foundation_id."""
+    """Search for candidates (role=user) by skills, name, or foundation_id.
+    Skill search checks BOTH manual `skills` and AI-extracted `resume_skills`.
+    """
     require_recruiter_or_admin(request)
     db = get_db()
 
     query: dict = {"role": "user"}
 
     if skill:
-        # match any skill containing the query (case-insensitive)
-        query["skills"] = {"$elemMatch": {"$regex": skill.strip(), "$options": "i"}}
+        # Match skill in either manual skills OR resume_skills extracted from uploaded resume
+        skill_regex = {"$regex": skill.strip(), "$options": "i"}
+        query["$or"] = [
+            {"skills": {"$elemMatch": skill_regex}},
+            {"resume_skills": {"$elemMatch": skill_regex}},
+        ]
     if name:
         query["username"] = {"$regex": name.strip(), "$options": "i"}
     if foundation_id:
@@ -47,7 +53,6 @@ def search_candidates(
     all_candidates = list(
         db.vgulg_users.find(query, {
             "password": 0,
-            # expose only safe fields
         }).sort("created_at", -1)
     )
     total = len(all_candidates)

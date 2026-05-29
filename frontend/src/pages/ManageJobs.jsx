@@ -1,5 +1,4 @@
 import React from "react";
-import { CiSquarePlus } from "react-icons/ci";
 import styled from "styled-components";
 import { useJobContext } from "../context/JobContext";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
@@ -96,7 +95,6 @@ const ManageJobs = () => {
         <Wrapper>
             <div className="title-row">
                 Manage Jobs
-                <CiSquarePlus className="ml-1 text-xl md:text-2xl" />
             </div>
             <div className="content-row">
                 <table className="table">
