@@ -13,7 +13,7 @@ import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 dayjs.extend(advancedFormat);
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const StudentProfile = () => {
     const { user, handleFetchMe } = useUserContext();
@@ -134,7 +134,7 @@ const StudentProfile = () => {
                                 <span className="resume-icon">📄</span>
                                 <div className="resume-info">
                                     <span className="resume-fname">{user?.resume_filename || "Resume"}</span>
-                                    <a href={`http://localhost:8000${user.resume}`} target="_blank" rel="noopener noreferrer" className="resume-view">
+                                    <a href={`https://job-portal-jk38.onrender.com${user.resume}`} target="_blank" rel="noopener noreferrer" className="resume-view">
                                         View <FiExternalLink size={11} />
                                     </a>
                                 </div>

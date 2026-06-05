@@ -6,7 +6,7 @@ import { FiAward, FiPlus, FiTrash2, FiExternalLink, FiUpload } from "react-icons
 import { useUserContext } from "../context/UserContext";
 import dayjs from "dayjs";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const Certifications = () => {
     const { user, handleFetchMe } = useUserContext();
@@ -162,7 +162,7 @@ const Certifications = () => {
                             <div className="cert-actions">
                                 {cert.file_url && (
                                     <a
-                                        href={`http://localhost:8000${cert.file_url}`}
+                                        href={`https://job-portal-jk38.onrender.com${cert.file_url}`}
                                         target="_blank" rel="noopener noreferrer"
                                         className="view-cert-btn"
                                         title="View Certificate"

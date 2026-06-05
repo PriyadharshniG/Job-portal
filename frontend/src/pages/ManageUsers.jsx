@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 const fetcher = (url) => axios.get(url, { withCredentials: true }).then(r => r.data);
 
 const ROLE_TABS = [

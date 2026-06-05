@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 dayjs.extend(relativeTime);
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const GitHubConnect = () => {
     const { user, handleFetchMe } = useUserContext();

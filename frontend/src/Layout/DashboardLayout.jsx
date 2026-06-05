@@ -31,7 +31,7 @@ const DashboardLayout = () => {
         if (result.isConfirmed) {
             try {
                 const response = await axios.post(
-                    "http://localhost:8000/api/v1/auth/logout",
+                    "https://job-portal-jk38.onrender.com/api/v1/auth/logout",
                     {},
                     { withCredentials: true }
                 );

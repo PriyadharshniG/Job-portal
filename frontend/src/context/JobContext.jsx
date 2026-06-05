@@ -24,7 +24,7 @@ const JobContext = ({ children }) => {
     };
 
     useEffect(() => {
-        handleJobFetch(`http://localhost:8000/api/v1/jobs/all?page=1`);
+        handleJobFetch(`https://job-portal-jk38.onrender.com/api/v1/jobs/all?page=1`);
     }, []);
 
     const passing = {

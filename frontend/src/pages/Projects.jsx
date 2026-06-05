@@ -6,7 +6,7 @@ import { FiFolder, FiPlus, FiTrash2, FiExternalLink, FiLink } from "react-icons/
 import { useUserContext } from "../context/UserContext";
 import dayjs from "dayjs";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const Projects = () => {
     const { user, handleFetchMe } = useUserContext();

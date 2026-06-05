@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Swal from "sweetalert2";
 import { FiDownload, FiFilter } from "react-icons/fi";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const STATUS_COLOR = {
     pending:     { bg: "#fef3c7", color: "#92400e" },
@@ -147,10 +147,10 @@ const Recruiter = () => {
                                         <td>
                                             {app?.resume_url ? (
                                                 <div className="resume-actions">
-                                                    <a href={`http://localhost:8000${app.resume_url}`}
+                                                    <a href={`https://job-portal-jk38.onrender.com${app.resume_url}`}
                                                         target="_blank" rel="noopener noreferrer"
                                                         className="resume-link">📄 View</a>
-                                                    <a href={`http://localhost:8000${app.resume_url}`}
+                                                    <a href={`https://job-portal-jk38.onrender.com${app.resume_url}`}
                                                         download className="resume-dl">⬇ DL</a>
                                                 </div>
                                             ) : <span className="no-resume">—</span>}

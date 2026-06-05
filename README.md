@@ -161,8 +161,8 @@ python -m uvicorn main:app --reload --port 8000
 
 > ✅ On first startup, the server **auto-seeds** the Admin account automatically.
 
-Backend runs at: **http://localhost:8000**  
-API Docs (Swagger): **http://localhost:8000/docs**
+Backend runs at: **https://job-portal-jk38.onrender.com**  
+API Docs (Swagger): **https://job-portal-jk38.onrender.com/docs**
 
 ---
 

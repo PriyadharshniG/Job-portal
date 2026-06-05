@@ -14,7 +14,7 @@ const PaginationCom = () => {
         // );
         // setItemOffset(newOffset);
         handleJobFetch(
-            `http://localhost:8000/api/v1/jobs/all?page=${e.selected + 1
+            `https://job-portal-jk38.onrender.com/api/v1/jobs/all?page=${e.selected + 1
             }&limit=5`
         );
     };

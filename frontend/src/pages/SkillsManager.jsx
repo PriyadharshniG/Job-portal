@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { FiPlus, FiX, FiStar, FiZap } from "react-icons/fi";
 import { useUserContext } from "../context/UserContext";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 // Predefined popular skills for quick-add
 const POPULAR_SKILLS = [

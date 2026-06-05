@@ -53,7 +53,7 @@ const AddJob = () => {
         console.log("Submitting job:", newJob);
         try {
             const response = await axios.post(
-                "http://localhost:8000/api/v1/jobs/post",
+                "https://job-portal-jk38.onrender.com/api/v1/jobs/post",
                 newJob,
                 { withCredentials: true }
             );

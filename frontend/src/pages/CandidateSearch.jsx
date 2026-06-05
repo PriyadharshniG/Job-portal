@@ -4,7 +4,7 @@ import axios from "axios";
 import Swal from "sweetalert2";
 import { FiSearch, FiDownload, FiUser, FiGithub, FiMail, FiMapPin, FiX, FiExternalLink } from "react-icons/fi";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 /* ── Candidate Profile Modal ── */
 const CandidateModal = ({ candidate, onClose }) => {
@@ -98,11 +98,11 @@ const CandidateModal = ({ candidate, onClose }) => {
 
                 {candidate.resume && (
                     <div className="modal-actions">
-                        <a href={`http://localhost:8000${candidate.resume}`} target="_blank"
+                        <a href={`https://job-portal-jk38.onrender.com${candidate.resume}`} target="_blank"
                             rel="noopener noreferrer" className="view-resume-btn">
                             📄 View Resume
                         </a>
-                        <a href={`http://localhost:8000${candidate.resume}`} download
+                        <a href={`https://job-portal-jk38.onrender.com${candidate.resume}`} download
                             className="dl-resume-btn">
                             <FiDownload size={13} /> Download Resume
                         </a>
@@ -248,7 +248,7 @@ const CandidateSearch = () => {
                                             <FiUser size={13} /> View Profile
                                         </button>
                                         {c.resume && (
-                                            <a href={`http://localhost:8000${c.resume}`} download
+                                            <a href={`https://job-portal-jk38.onrender.com${c.resume}`} download
                                                 className="dl-btn" title="Download Resume">
                                                 <FiDownload size={13} /> Resume
                                             </a>

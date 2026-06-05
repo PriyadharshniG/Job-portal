@@ -5,7 +5,7 @@ import Swal from "sweetalert2";
 import { FiZap, FiCopy, FiChevronDown, FiPlus, FiX } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const DIFFICULTY_COLORS = {
     easy:   { bg: "#dcfce7", color: "#166534" },

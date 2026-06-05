@@ -6,7 +6,7 @@ import styled from "styled-components";
 import LoadingComTwo from "../components/shared/LoadingComTwo";
 import Swal from "sweetalert2";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const fetcher = (url) => axios.get(url, { withCredentials: true }).then(r => r.data);
 
@@ -262,7 +262,7 @@ const Admin = () => {
                                                 <td>
                                                     {app.resume_url ? (
                                                         <a
-                                                            href={`http://localhost:8000${app.resume_url}`}
+                                                            href={`https://job-portal-jk38.onrender.com${app.resume_url}`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="resume-link"

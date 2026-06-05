@@ -16,7 +16,7 @@ const SearchAndFilter = () => {
 
     useEffect(() => {
         const baseUrl =
-            "http://localhost:8000/api/v1/jobs/all?page=1&limit=10";
+            "https://job-portal-jk38.onrender.com/api/v1/jobs/all?page=1&limit=10";
         let url = baseUrl;
         const queryParams = {};
 

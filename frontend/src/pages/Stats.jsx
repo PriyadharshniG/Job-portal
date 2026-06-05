@@ -17,7 +17,7 @@ import {
     Legend,
 } from "recharts";
 
-const API = "http://localhost:8000/api/v1";
+const API = "https://job-portal-jk38.onrender.com/api/v1";
 
 const COLORS = ["#4f6ef7", "#8b5cf6", "#14b8a6", "#10b981", "#f97316", "#22c55e", "#6366f1", "#f59e0b"];
 

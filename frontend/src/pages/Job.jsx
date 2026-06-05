@@ -33,7 +33,7 @@ const Job = () => {
         queryKey: ["job", id],
         queryFn: async () => {
             const res = await axios.get(
-                `http://localhost:8000/api/v1/jobs/${id}`,
+                `https://job-portal-jk38.onrender.com/api/v1/jobs/${id}`,
                 { withCredentials: true }
             );
             return res.data?.result;
@@ -74,7 +74,7 @@ const Job = () => {
             const formData = new FormData();
             formData.append("file", resumeFile);
             const uploadRes = await axios.post(
-                `http://localhost:8000/api/v1/applications/upload-resume`,
+                `https://job-portal-jk38.onrender.com/api/v1/applications/upload-resume`,
                 formData,
                 {
                     withCredentials: true,
@@ -85,7 +85,7 @@ const Job = () => {
 
             // Step 2: Submit application with the uploaded resume URL
             const response = await axios.post(
-                `http://localhost:8000/api/v1/applications/apply`,
+                `https://job-portal-jk38.onrender.com/api/v1/applications/apply`,
                 { job_id: id, resume_url },
                 { withCredentials: true }
             );

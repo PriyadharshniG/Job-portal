@@ -1,6 +1,6 @@
 import requests
 
-base_url = "http://localhost:8000/api/v1/auth"
+base_url = "https://job-portal-jk38.onrender.com/api/v1/auth"
 
 # Test Registration
 reg_data = {

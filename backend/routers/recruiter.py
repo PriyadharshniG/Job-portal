@@ -593,7 +593,7 @@ def export_applications_csv(request: Request, job_id: Optional[str] = None):
         u = db.vgulg_users.find_one({"_id": app.get("user_id", "")}, {"email": 1})
         email = u.get("email", "") if u else ""
         applied_at = app.get("applied_at", "")[:10] if app.get("applied_at") else ""
-        resume = f"http://localhost:8000{app.get('resume_url', '')}" if app.get("resume_url") else ""
+        resume = f"https://job-portal-jk38.onrender.com{app.get('resume_url', '')}" if app.get("resume_url") else ""
         writer.writerow([
             i,
             app.get("username", ""),

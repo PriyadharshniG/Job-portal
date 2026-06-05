@@ -51,7 +51,7 @@ const EditProfile = () => {
         if (data.phone)      updateUser.phone      = data.phone;
         try {
             await axios.put(
-                `http://localhost:8000/api/v1/student/profile/update`,
+                `https://job-portal-jk38.onrender.com/api/v1/student/profile/update`,
                 updateUser,
                 { withCredentials: true }
             );
